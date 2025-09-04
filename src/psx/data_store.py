@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def connect_to_mongodb(connection_string="mongodb://localhost:27017/", db_name="psx_stocks"):
+def connect_to_mongodb(connection_string="mongodb://localhost:27017/", db_name="finhisaab"):
     """
     Connect to MongoDB and return database object
     
@@ -64,13 +64,11 @@ def dataframe_to_documents(df, symbol):
         document = {
             "symbol": symbol,
             "date": date,
-            "open": float(row['Open']),
-            "high": float(row['High']),
-            "low": float(row['Low']),
-            "close": float(row['Close']),
-            "volume": float(row['Volume']),
-            "created_at": current_time,
-            "updated_at": current_time
+            "open": int(round(float(row['Open']) * 100)),
+            "high": int(round(float(row['High']) * 100)),
+            "low": int(round(float(row['Low']) * 100)),
+            "close": int(round(float(row['Close']) * 100)),
+            "volume": float(row['Volume'])
         }
         documents.append(document)
     
@@ -78,7 +76,7 @@ def dataframe_to_documents(df, symbol):
     return documents
 
 def save_to_mongodb(df, symbol, connection_string="mongodb://localhost:27017/", 
-                   db_name="psx_stocks", collection_name="stock_data"):
+                   db_name="finhisaab", collection_name="psxstockpricedata"):
     """
     Save stock data to MongoDB
     
@@ -104,7 +102,7 @@ def save_to_mongodb(df, symbol, connection_string="mongodb://localhost:27017/",
             return False, "No documents to insert"
         
         # Create a unique index on symbol and date to avoid duplicates
-        collection.create_index([("symbol", pymongo.ASCENDING), ("date", pymongo.ASCENDING)], unique=True)
+        # collection.create_index([("symbol", pymongo.ASCENDING), ("date", pymongo.ASCENDING)], unique=True)
         
         # Use bulk operations for better performance
         operations = []

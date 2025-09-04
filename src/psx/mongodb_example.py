@@ -26,8 +26,8 @@ def main():
     # Save data to MongoDB
     # Modify the connection string as needed for your MongoDB setup
     connection_string = "mongodb://localhost:27017/"
-    db_name = "psx_stocks"
-    collection_name = "stock_data"
+    db_name = "finhisaab"
+    collection_name = "stockpricehistories"
     
     print(f"\nSaving data to MongoDB ({db_name}.{collection_name})...")
     
@@ -43,39 +43,39 @@ def main():
     print(f"Message: {message}")
     
     if success:
-        print("\nData has been successfully stored in MongoDB with the following schema:")
-        print("""
-{
-    "_id": ObjectId("..."),
-    "symbol": "MEBL", 
-    "date": ISODate("2025-08-01T00:00:00Z"),
-    "open": 360.45,
-    "high": 364.05,
-    "low": 358.02,
-    "close": 362.99,
-    "volume": 499099.0,
-    "created_at": ISODate("2025-09-04T18:39:44Z"),
-    "updated_at": ISODate("2025-09-04T18:39:44Z")
-}
-        """)
+        print("\nData has been successfully stored in MongoDB")
+#         print("""
+# {
+#     "_id": ObjectId("..."),
+#     "symbol": "MEBL", 
+#     "date": ISODate("2025-08-01T00:00:00Z"),
+#     "open": 360.45,
+#     "high": 364.05,
+#     "low": 358.02,
+#     "close": 362.99,
+#     "volume": 499099.0,
+#     "created_at": ISODate("2025-09-04T18:39:44Z"),
+#     "updated_at": ISODate("2025-09-04T18:39:44Z")
+# }
+#         """)
         
-        print("\nTo query this data in MongoDB, you can use:")
-        print("""
-# Using the MongoDB shell
-db.stock_data.find({ "symbol": "MEBL" })
+#         print("\nTo query this data in MongoDB, you can use:")
+#         print("""
+# # Using the MongoDB shell
+# db.stockpricehistories.find({ "symbol": "MEBL" })
 
-# Get data for a specific date
-db.stock_data.find({ "symbol": "MEBL", "date": ISODate("2025-08-01T00:00:00Z") })
+# # Get data for a specific date
+# db.stockpricehistories.find({ "symbol": "MEBL", "date": ISODate("2025-08-01T00:00:00Z") })
 
-# Get data for a date range
-db.stock_data.find({ 
-    "symbol": "MEBL", 
-    "date": { 
-        "$gte": ISODate("2025-08-01T00:00:00Z"),
-        "$lte": ISODate("2025-08-15T00:00:00Z")
-    } 
-})
-        """)
+# # Get data for a date range
+# db.stockpricehistories.find({ 
+#     "symbol": "MEBL", 
+#     "date": { 
+#         "$gte": ISODate("2025-08-01T00:00:00Z"),
+#         "$lte": ISODate("2025-08-15T00:00:00Z")
+#     } 
+# })
+#         """)
 
 if __name__ == "__main__":
     main()
