@@ -82,3 +82,12 @@ and now the returned DataFrame object will have a hierarchical index on rows.
 
 
 <!-- Security scan triggered at 2025-09-02 02:41:43 -->
+
+# from your repo root
+python -m venv .venv
+.\.venv\Scripts\Activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+python -m pip install plotly
+
+python .\src\psx\example.py
