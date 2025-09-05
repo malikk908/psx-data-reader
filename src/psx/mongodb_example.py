@@ -127,13 +127,14 @@ def split_date_range(start_date, end_date, months=6):
 def main():
     # Define the stock symbol and date range
     symbol = "MEBL"
-    start_date = datetime.date(2025, 8, 1)
-    end_date = datetime.date.today()
+    start_date = datetime.date(2025, 5, 15) #May 15th
+    end_date = datetime.date(2025, 8, 31) #August end
     
     print(f"Fetching data for {symbol} from {start_date} to {end_date}")
     
     # Split the date range into 6-month intervals
-    intervals = split_date_range(start_date, end_date, months=6)
+    #2 months interval for testing
+    intervals = split_date_range(start_date, end_date, months=2)
     print(f"Split into {len(intervals)} intervals:")
     for i, (interval_start, interval_end) in enumerate(intervals):
         print(f"  Interval {i+1}: {interval_start} to {interval_end}")
