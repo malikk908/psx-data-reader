@@ -8,6 +8,84 @@ import datetime
 import time
 import random
 import pandas as pd
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+
+def is_interval_processed(symbol, interval_start, interval_end, connection_string, db_name):
+    """
+    Check if a specific interval for a stock has already been processed and stored in MongoDB.
+    
+    Args:
+        symbol (str): Stock symbol
+        interval_start (datetime.date): Start date of the interval
+        interval_end (datetime.date): End date of the interval
+        connection_string (str): MongoDB connection string
+        db_name (str): MongoDB database name
+        
+    Returns:
+        bool: True if the interval has been processed, False otherwise
+    """
+    try:
+        # Connect to MongoDB
+        client = MongoClient(connection_string)
+        db = client[db_name]
+        processed_intervals = db['processed_intervals']
+        
+        # Check if this interval exists in the processed_intervals collection
+        query = {
+            'symbol': symbol,
+            'interval_start': interval_start,
+            'interval_end': interval_end
+        }
+        
+        result = processed_intervals.find_one(query)
+        return result is not None
+        
+    except PyMongoError as e:
+        print(f"Error checking processed intervals: {e}")
+        return False
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def record_processed_interval(symbol, interval_start, interval_end, connection_string, db_name):
+    """
+    Record a processed interval in MongoDB.
+    
+    Args:
+        symbol (str): Stock symbol
+        interval_start (datetime.date): Start date of the interval
+        interval_end (datetime.date): End date of the interval
+        connection_string (str): MongoDB connection string
+        db_name (str): MongoDB database name
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Connect to MongoDB
+        client = MongoClient(connection_string)
+        db = client[db_name]
+        processed_intervals = db['processed_intervals']
+        
+        # Prepare document
+        document = {
+            'symbol': symbol,
+            'interval_start': interval_start,
+            'interval_end': interval_end,
+            'processed_at': datetime.datetime.now()
+        }
+        
+        # Insert the document
+        processed_intervals.insert_one(document)
+        return True
+        
+    except PyMongoError as e:
+        print(f"Error recording processed interval: {e}")
+        return False
+    finally:
+        if 'client' in locals():
+            client.close()
 
 def split_date_range(start_date, end_date, months=6):
     """
@@ -70,7 +148,14 @@ def main():
     
     # Fetch data for each interval
     for i, (interval_start, interval_end) in enumerate(intervals):
-        print(f"\nFetching data for interval {i+1}/{len(intervals)}: {interval_start} to {interval_end}")
+        print(f"\nProcessing interval {i+1}/{len(intervals)}: {interval_start} to {interval_end}")
+        
+        # Check if this interval has already been processed
+        if is_interval_processed(symbol, interval_start, interval_end, connection_string, db_name):
+            print(f"  Interval already processed. Skipping...")
+            continue
+            
+        print(f"  Fetching data for interval: {interval_start} to {interval_end}")
         
         # Fetch stock data for this interval
         interval_data = stocks(symbol, start=interval_start, end=interval_end)
@@ -88,6 +173,20 @@ def main():
         )
         print(f"  MongoDB Save Result: {'Success' if success else 'Failed'}")
         print(f"  Message: {message}")
+        
+        # If save was successful, record this interval as processed
+        if success:
+            record_result = record_processed_interval(
+                symbol, 
+                interval_start, 
+                interval_end, 
+                connection_string, 
+                db_name
+            )
+            if record_result:
+                print(f"  Interval recorded as processed")
+            else:
+                print(f"  Failed to record interval as processed")
         
         # Append to the combined DataFrame for tracking purposes
         all_data = pd.concat([all_data, interval_data])
