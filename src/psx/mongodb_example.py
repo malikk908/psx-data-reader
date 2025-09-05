@@ -31,11 +31,15 @@ def is_interval_processed(symbol, interval_start, interval_end, connection_strin
         db = client[db_name]
         processed_intervals = db['processed_intervals']
         
+        # Convert date objects to datetime objects for MongoDB compatibility
+        start_datetime = datetime.datetime.combine(interval_start, datetime.time.min)
+        end_datetime = datetime.datetime.combine(interval_end, datetime.time.min)
+        
         # Check if this interval exists in the processed_intervals collection
         query = {
             'symbol': symbol,
-            'interval_start': interval_start,
-            'interval_end': interval_end
+            'interval_start': start_datetime,
+            'interval_end': end_datetime
         }
         
         result = processed_intervals.find_one(query)
@@ -68,11 +72,15 @@ def record_processed_interval(symbol, interval_start, interval_end, connection_s
         db = client[db_name]
         processed_intervals = db['processed_intervals']
         
+        # Convert date objects to datetime objects for MongoDB compatibility
+        start_datetime = datetime.datetime.combine(interval_start, datetime.time.min)
+        end_datetime = datetime.datetime.combine(interval_end, datetime.time.min)
+        
         # Prepare document
         document = {
             'symbol': symbol,
-            'interval_start': interval_start,
-            'interval_end': interval_end,
+            'interval_start': start_datetime,
+            'interval_end': end_datetime,
             'processed_at': datetime.datetime.now()
         }
         
@@ -204,45 +212,10 @@ def main():
     # Display basic information about the combined data
     print(f"\nCombined data summary:")
     print(f"Total records processed: {len(all_data)}")
-    print(f"Date range: {all_data['date'].min()} to {all_data['date'].max()}")
-    print(f"Columns: {all_data.columns.tolist()}")
+      
     
     print("\nAll intervals processed and saved to MongoDB successfully.")
-    
-    if success:
-        print("\nData has been successfully stored in MongoDB")
-#         print("""
-# {
-#     "_id": ObjectId("..."),
-#     "symbol": "MEBL", 
-#     "date": ISODate("2025-08-01T00:00:00Z"),
-#     "open": 360.45,
-#     "high": 364.05,
-#     "low": 358.02,
-#     "close": 362.99,
-#     "volume": 499099.0,
-#     "created_at": ISODate("2025-09-04T18:39:44Z"),
-#     "updated_at": ISODate("2025-09-04T18:39:44Z")
-# }
-#         """)
-        
-#         print("\nTo query this data in MongoDB, you can use:")
-#         print("""
-# # Using the MongoDB shell
-# db.stockpricehistories.find({ "symbol": "MEBL" })
-
-# # Get data for a specific date
-# db.stockpricehistories.find({ "symbol": "MEBL", "date": ISODate("2025-08-01T00:00:00Z") })
-
-# # Get data for a date range
-# db.stockpricehistories.find({ 
-#     "symbol": "MEBL", 
-#     "date": { 
-#         "$gte": ISODate("2025-08-01T00:00:00Z"),
-#         "$lte": ISODate("2025-08-15T00:00:00Z")
-#     } 
-# })
-#         """)
+ 
 
 if __name__ == "__main__":
     main()
