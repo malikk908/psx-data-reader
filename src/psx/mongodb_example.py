@@ -5,6 +5,46 @@ Example script demonstrating how to fetch PSX data and store it in MongoDB.
 from psx import stocks
 from psx.data_store import save_to_mongodb
 import datetime
+import time
+import random
+import pandas as pd
+
+def split_date_range(start_date, end_date, months=6):
+    """
+    Split a date range into intervals of specified months.
+    
+    Args:
+        start_date (datetime.date): Start date
+        end_date (datetime.date): End date
+        months (int): Number of months per interval
+        
+    Returns:
+        list: List of (interval_start, interval_end) tuples
+    """
+    intervals = []
+    current_start = start_date
+    
+    while current_start < end_date:
+        # Calculate the end of this interval (current_start + months)
+        # Add months by calculating year and month separately
+        year = current_start.year + ((current_start.month - 1 + months) // 12)
+        month = ((current_start.month - 1 + months) % 12) + 1
+        day = min(current_start.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 
+                                     31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+        
+        interval_end = datetime.date(year, month, day)
+        
+        # If this interval would go past the end_date, cap it
+        if interval_end > end_date:
+            interval_end = end_date
+            
+        intervals.append((current_start, interval_end))
+        
+        # Move to the next interval
+        # Add one day to avoid overlapping dates
+        current_start = interval_end + datetime.timedelta(days=1)
+    
+    return intervals
 
 def main():
     # Define the stock symbol and date range
@@ -14,33 +54,60 @@ def main():
     
     print(f"Fetching data for {symbol} from {start_date} to {end_date}")
     
-    # Fetch stock data
-    data = stocks(symbol, start=start_date, end=end_date)
+    # Split the date range into 6-month intervals
+    intervals = split_date_range(start_date, end_date, months=6)
+    print(f"Split into {len(intervals)} intervals:")
+    for i, (interval_start, interval_end) in enumerate(intervals):
+        print(f"  Interval {i+1}: {interval_start} to {interval_end}")
     
-    # Display basic information about the data
-    print(f"Shape: {data.shape}")
-    print(f"Columns: {data.columns.tolist()}")
-    print(f"First 5 rows:")
-    print(data.head())
+    # Initialize an empty DataFrame to store all data
+    all_data = pd.DataFrame()
     
-    # Save data to MongoDB
-    # Modify the connection string as needed for your MongoDB setup
+    # MongoDB connection settings
     connection_string = "mongodb://192.168.0.131:27017/"
     db_name = "finhisaab"
     collection_name = "stockpricehistories"
     
-    print(f"\nSaving data to MongoDB ({db_name}.{collection_name})...")
+    # Fetch data for each interval
+    for i, (interval_start, interval_end) in enumerate(intervals):
+        print(f"\nFetching data for interval {i+1}/{len(intervals)}: {interval_start} to {interval_end}")
+        
+        # Fetch stock data for this interval
+        interval_data = stocks(symbol, start=interval_start, end=interval_end)
+        
+        print(f"  Retrieved {len(interval_data)} records")
+        
+        # Save this interval's data to MongoDB
+        print(f"  Saving interval data to MongoDB ({db_name}.{collection_name})...")
+        success, message = save_to_mongodb(
+            df=interval_data,
+            symbol=symbol,
+            connection_string=connection_string,
+            db_name=db_name,
+            collection_name=collection_name
+        )
+        print(f"  MongoDB Save Result: {'Success' if success else 'Failed'}")
+        print(f"  Message: {message}")
+        
+        # Append to the combined DataFrame for tracking purposes
+        all_data = pd.concat([all_data, interval_data])
+        
+        # Add random delay between API calls (except after the last interval)
+        if i < len(intervals) - 1:
+            delay = random.uniform(3, 6)
+            print(f"  Waiting {delay:.2f} seconds before next request...")
+            time.sleep(delay)
     
-    success, message = save_to_mongodb(
-        df=data,
-        symbol=symbol,
-        connection_string=connection_string,
-        db_name=db_name,
-        collection_name=collection_name
-    )
+    # Remove any duplicate records that might occur at interval boundaries
+    all_data = all_data.drop_duplicates()
     
-    print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
-    print(f"Message: {message}")
+    # Display basic information about the combined data
+    print(f"\nCombined data summary:")
+    print(f"Total records processed: {len(all_data)}")
+    print(f"Date range: {all_data['date'].min()} to {all_data['date'].max()}")
+    print(f"Columns: {all_data.columns.tolist()}")
+    
+    print("\nAll intervals processed and saved to MongoDB successfully.")
     
     if success:
         print("\nData has been successfully stored in MongoDB")
