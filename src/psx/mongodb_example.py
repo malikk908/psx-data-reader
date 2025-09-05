@@ -180,7 +180,7 @@ def main():
 
     # --- Fetch stock symbols from MongoDB ---
     # Change the batch_number to process different sets of 50 stocks
-    batch_number_to_process = 1 
+    batch_number_to_process = 2
     symbols_to_process = get_stock_symbols(connection_string, db_name, batch_number=batch_number_to_process)
 
     if not symbols_to_process:
