@@ -190,7 +190,7 @@ def main():
     print(f"Found {len(symbols_to_process)} symbols to process in batch #{batch_number_to_process}.")
 
     # --- Loop over each symbol and process it ---
-    for symbol in symbols_to_process:
+    for i, symbol in enumerate(symbols_to_process):
         print(f"\n{'='*50}")
         print(f"Processing symbol: {symbol}")
         print(f"Fetching data for {symbol} from {start_date} to {end_date}")
@@ -200,8 +200,8 @@ def main():
         print(f"Split into {len(intervals)} intervals.")
 
         # Fetch data for each interval
-        for i, (interval_start, interval_end) in enumerate(intervals):
-            print(f"\n  Processing interval {i+1}/{len(intervals)}: {interval_start} to {interval_end}")
+        for interval_index, (interval_start, interval_end) in enumerate(intervals):
+            print(f"\n  Processing interval {interval_index+1}/{len(intervals)}: {interval_start} to {interval_end}")
             
             # Check if this interval has already been processed
             if is_interval_processed(symbol, interval_start, interval_end, connection_string, db_name):
@@ -248,10 +248,16 @@ def main():
                     print(f"    Failed to record interval as processed for {symbol}")
             
             # Add random delay between API calls
-            if i < len(intervals) - 1:
+            if interval_index < len(intervals) - 1:
                 delay = random.uniform(6, 10)
                 print(f"    Waiting {delay:.2f} seconds before next request...")
                 time.sleep(delay)
+
+        # Add random delay between processing different stocks
+        if i < len(symbols_to_process) - 1:
+            delay = random.uniform(12, 16)
+            print(f"\nWaiting {delay:.2f} seconds before processing the next stock...")
+            time.sleep(delay)
 
     print(f"\n{'='*50}")
     print("All specified stock symbols and their intervals processed.")
