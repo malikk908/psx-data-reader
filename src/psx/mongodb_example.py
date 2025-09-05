@@ -132,7 +132,7 @@ def split_date_range(start_date, end_date, months=6):
     
     return intervals
 
-def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=2):
+def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=50):
     """
     Fetch stock symbols from the 'stock' collection in MongoDB, sorted by marketCap.
 
@@ -148,7 +148,7 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=2):
     try:
         client = MongoClient(connection_string)
         db = client[db_name]
-        stocks_collection = db['stock']
+        stocks_collection = db['stocks']
         
         # Calculate the number of documents to skip
         skip_amount = (batch_number - 1) * batch_size
