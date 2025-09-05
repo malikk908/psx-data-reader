@@ -202,7 +202,7 @@ def main():
         
         # Add random delay between API calls (except after the last interval)
         if i < len(intervals) - 1:
-            delay = random.uniform(3, 6)
+            delay = random.uniform(6, 10)
             print(f"  Waiting {delay:.2f} seconds before next request...")
             time.sleep(delay)
     
