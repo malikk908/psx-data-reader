@@ -111,3 +111,5 @@ python src/psx/mongodb_example.py
 python -m psx.mongodb_example
 
 
+mongodump --uri mongodb://192.168.0.131:27017/finhisaab --collection=stockpricehistories
+mongorestore --uri <uri> --nsInclude=finhisaab.stockpricehistories

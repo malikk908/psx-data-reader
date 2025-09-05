@@ -25,7 +25,7 @@ def main():
     
     # Save data to MongoDB
     # Modify the connection string as needed for your MongoDB setup
-    connection_string = "mongodb://localhost:27017/"
+    connection_string = "mongodb://192.168.0.131:27017/"
     db_name = "finhisaab"
     collection_name = "stockpricehistories"
     
