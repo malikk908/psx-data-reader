@@ -85,16 +85,29 @@ and now the returned DataFrame object will have a hierarchical index on rows.
 
 # activate virtual environment
 .\.venv\Scripts\Activate
+source .venv/bin/activate
 
 # from your repo root
 python -m venv .venv
+
 .\.venv\Scripts\Activate
+source .venv/bin/activate
+
 python -m pip install --upgrade pip
 python -m pip install -e .
-python -m pip install plotly
+python -m pip install -r requirements.txt
+<!-- python -m pip install plotly -->
 
+# to run the example
 python .\src\psx\example.py
+# linux
+python src/psx/example.py
 
+# to run the mongodb example
 python .\src\psx\mongodb_example.py
+# linux
+python src/psx/mongodb_example.py
+# or
 python -m psx.mongodb_example
+
 
