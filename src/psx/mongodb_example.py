@@ -172,11 +172,14 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=50)
 
 def main():
     # Define the stock symbol and date range
-    start_date = datetime.date(2020, 1, 1) #January 1st
-    end_date = datetime.date(2025, 8, 31) #August end
+    start_date = datetime.date(2020, 1, 1) #January 1st, 2020
+    end_date = datetime.date(2025, 8, 31) #August end, 2025
 
-    # start_date = datetime.date(2015, 1, 1) #January 1st
-    # end_date = datetime.date(2019, 12, 31) #December end
+    # start_date = datetime.date(2015, 1, 1) #January 1st, 2015
+    # end_date = datetime.date(2019, 12, 31) #December end, 2019
+
+    # start_date = datetime.date(2010, 1, 1) #January 1st, 2010
+    # end_date = datetime.date(2014, 12, 31) #December end, 2014
 
     # MongoDB connection settings
     connection_string = "mongodb://192.168.0.131:27017/"
@@ -186,13 +189,19 @@ def main():
     # --- Fetch stock symbols from MongoDB ---
     # Change the batch_number to process different sets of 50 stocks
 
-    # info - from 2020, 3 batches done of size 50 each
-    # info - from 2020, 4th batch (of size 50) in progress    
-    
-    # info - from 2015, 1 batch done of size 50
+    # info - from 2020, 5 batches done of size 50 each
+    # info - from 2020, 6th batch (of size 50) needs to be done
 
+    # info - from 2015, 2 batches done of size 50
+    # info - from 2015, 3rd batch (of size 50) needs to be done
 
-    batch_number_to_process = 4
+     # info - from 2010, 1 batches done of size 50
+    # info - from 2010, 2nd batch (of size 50) needs to be done
+
+     # info - from 2005, 0 batches done of size 50
+    # info - from 2005, 1st batch (of size 50) needs to be done
+
+    batch_number_to_process = 6 #on line 193
     symbols_to_process = get_stock_symbols(connection_string, db_name, batch_number=batch_number_to_process)
 
     if not symbols_to_process:
