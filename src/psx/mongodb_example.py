@@ -173,6 +173,9 @@ def main():
     start_date = datetime.date(2020, 1, 1) #January 1st
     end_date = datetime.date(2025, 8, 31) #August end
 
+    # start_date = datetime.date(2015, 1, 1) #January 1st
+    # end_date = datetime.date(2019, 12, 31) #December end
+
     # MongoDB connection settings
     connection_string = "mongodb://192.168.0.131:27017/"
     db_name = "finhisaab"
@@ -180,7 +183,14 @@ def main():
 
     # --- Fetch stock symbols from MongoDB ---
     # Change the batch_number to process different sets of 50 stocks
-    batch_number_to_process = 2
+
+    # info - from 2020, 3 batches done of size 50 each
+    # info - from 2020, 4th batch (of size 50) in progress    
+    
+    # info - from 2015, 1 batch done of size 50
+
+
+    batch_number_to_process = 4
     symbols_to_process = get_stock_symbols(connection_string, db_name, batch_number=batch_number_to_process)
 
     if not symbols_to_process:
@@ -196,7 +206,7 @@ def main():
         print(f"Fetching data for {symbol} from {start_date} to {end_date}")
         
         # Split the date range into 6-month intervals
-        intervals = split_date_range(start_date, end_date, months=6)
+        intervals = split_date_range(start_date, end_date, months=12)
         print(f"Split into {len(intervals)} intervals.")
 
         # Fetch data for each interval
@@ -249,13 +259,13 @@ def main():
             
             # Add random delay between API calls
             if interval_index < len(intervals) - 1:
-                delay = random.uniform(6, 10)
+                delay = random.uniform(4, 7)
                 print(f"    Waiting {delay:.2f} seconds before next request...")
                 time.sleep(delay)
 
         # Add random delay between processing different stocks
         if i < len(symbols_to_process) - 1:
-            delay = random.uniform(12, 16)
+            delay = random.uniform(8, 12)
             print(f"\nWaiting {delay:.2f} seconds before processing the next stock...")
             time.sleep(delay)
 
