@@ -9,7 +9,10 @@ import datetime
 
 # tickers = tickers()
 
-data = stocks("MEBL", start=datetime.date(2025, 8, 1), end=datetime.date.today())
+start = datetime.date(2010, 8, 1)
+end = datetime.date(2011, 8, 1)
+
+data = stocks("MEBL", start=start, end=end)
 
 # Shape of data (rows, columns)
 print(f"Shape: {data.shape}")
