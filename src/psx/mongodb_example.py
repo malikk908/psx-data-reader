@@ -259,13 +259,13 @@ def main():
             
             # Add random delay between API calls
             if interval_index < len(intervals) - 1:
-                delay = random.uniform(4, 7)
+                delay = random.uniform(3, 5)
                 print(f"    Waiting {delay:.2f} seconds before next request...")
                 time.sleep(delay)
 
         # Add random delay between processing different stocks
         if i < len(symbols_to_process) - 1:
-            delay = random.uniform(8, 12)
+            delay = random.uniform(5, 7)
             print(f"\nWaiting {delay:.2f} seconds before processing the next stock...")
             time.sleep(delay)
 
