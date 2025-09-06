@@ -52,7 +52,7 @@ def is_interval_processed(symbol, interval_start, interval_end, connection_strin
         if 'client' in locals():
             client.close()
 
-def record_processed_interval(symbol, interval_start, interval_end, connection_string, db_name):
+def record_processed_interval(symbol, interval_start, interval_end, connection_string, db_name, no_data_found=False):
     """
     Record a processed interval in MongoDB.
     
@@ -62,6 +62,7 @@ def record_processed_interval(symbol, interval_start, interval_end, connection_s
         interval_end (datetime.date): End date of the interval
         connection_string (str): MongoDB connection string
         db_name (str): MongoDB database name
+        no_data_found (bool): Whether this interval was processed but contained no data
         
     Returns:
         bool: True if successful, False otherwise
@@ -81,7 +82,8 @@ def record_processed_interval(symbol, interval_start, interval_end, connection_s
             'symbol': symbol,
             'interval_start': start_datetime,
             'interval_end': end_datetime,
-            'processed_at': datetime.datetime.now()
+            'processed_at': datetime.datetime.now(),
+            'no_data_found': bool(no_data_found)
         }
         
         # Insert the document
@@ -225,6 +227,19 @@ def main():
                 interval_data = stocks(symbol, start=interval_start, end=interval_end)
                 if interval_data.empty:
                     print(f"    No data found for {symbol} in this interval.")
+                    # Record this interval as processed with a no_data_found flag
+                    record_result = record_processed_interval(
+                        symbol,
+                        interval_start,
+                        interval_end,
+                        connection_string,
+                        db_name,
+                        no_data_found=True
+                    )
+                    if record_result:
+                        print(f"    Interval recorded as processed (no data) for {symbol}")
+                    else:
+                        print(f"    Failed to record interval as processed (no data) for {symbol}")
                     continue
                 print(f"    Retrieved {len(interval_data)} records for {symbol}")
             except Exception as e:
@@ -250,7 +265,8 @@ def main():
                     interval_start, 
                     interval_end, 
                     connection_string, 
-                    db_name
+                    db_name,
+                    no_data_found=False
                 )
                 if record_result:
                     print(f"    Interval recorded as processed for {symbol}")
