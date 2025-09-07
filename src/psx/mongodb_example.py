@@ -172,14 +172,20 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=50)
 
 def main():
     # Define the stock symbol and date range
-    start_date = datetime.date(2020, 1, 1) #January 1st, 2020
-    end_date = datetime.date(2025, 8, 31) #August end, 2025
+    # start_date = datetime.date(2020, 1, 1) #January 1st, 2020
+    # end_date = datetime.date(2025, 8, 31) #August end, 2025
 
-    # start_date = datetime.date(2015, 1, 1) #January 1st, 2015
-    # end_date = datetime.date(2019, 12, 31) #December end, 2019
+    start_date = datetime.date(2015, 1, 1) #January 1st, 2015
+    end_date = datetime.date(2019, 12, 31) #December end, 2019
 
     # start_date = datetime.date(2010, 1, 1) #January 1st, 2010
     # end_date = datetime.date(2014, 12, 31) #December end, 2014
+
+    # start_date = datetime.date(2005, 1, 1) #January 1st, 2005
+    # end_date = datetime.date(2009, 12, 31) #December end, 2009
+
+    # start_date = datetime.date(2000, 1, 1) #January 1st, 2000
+    # end_date = datetime.date(2004, 12, 31) #December end, 2004
 
     # MongoDB connection settings
     connection_string = "mongodb://192.168.0.131:27017/"
@@ -189,19 +195,21 @@ def main():
     # --- Fetch stock symbols from MongoDB ---
     # Change the batch_number to process different sets of 50 stocks
 
-    # info - from 2020, 5 batches done of size 50 each
-    # info - from 2020, 6th batch (of size 50) needs to be done
+    # info - from 2020, 10 batches done of size 50 each - completed
 
-    # info - from 2015, 2 batches done of size 50
-    # info - from 2015, 3rd batch (of size 50) needs to be done
+    # info - from 2015, 5 batches done of size 50
+    # info - from 2015, 6th batch (of size 50) needs to be done
 
-     # info - from 2010, 1 batches done of size 50
-    # info - from 2010, 2nd batch (of size 50) needs to be done
+     # info - from 2010, 4 batches done of size 50
+    # info - from 2010, 5th batch (of size 50) needs to be done
 
-     # info - from 2005, 0 batches done of size 50
-    # info - from 2005, 1st batch (of size 50) needs to be done
+     # info - from 2005, 4 batches done of size 50
+    # info - from 2005, 5th batch (of size 50) needs to be done
 
-    batch_number_to_process = 6 #on line 193
+     # info - from 2000, 3 batches done of size 50
+    # info - from 2000, 4th batch (of size 50) needs to be done
+
+    batch_number_to_process = 6 #as per line 201
     symbols_to_process = get_stock_symbols(connection_string, db_name, batch_number=batch_number_to_process)
 
     if not symbols_to_process:
@@ -284,13 +292,13 @@ def main():
             
             # Add random delay between API calls
             if interval_index < len(intervals) - 1:
-                delay = random.uniform(3, 5)
+                delay = random.uniform(2, 4)
                 print(f"    Waiting {delay:.2f} seconds before next request...")
                 time.sleep(delay)
 
         # Add random delay between processing different stocks
         if i < len(symbols_to_process) - 1:
-            delay = random.uniform(5, 7)
+            delay = random.uniform(3, 4)
             print(f"\nWaiting {delay:.2f} seconds before processing the next stock...")
             time.sleep(delay)
 
