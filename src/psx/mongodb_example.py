@@ -175,17 +175,20 @@ def main():
     # start_date = datetime.date(2020, 1, 1) #January 1st, 2020
     # end_date = datetime.date(2025, 8, 31) #August end, 2025
 
-    start_date = datetime.date(2015, 1, 1) #January 1st, 2015
-    end_date = datetime.date(2019, 12, 31) #December end, 2019
+    # start_date = datetime.date(2015, 1, 1) #January 1st, 2015
+    # end_date = datetime.date(2019, 12, 31) #December end, 2019
 
     # start_date = datetime.date(2010, 1, 1) #January 1st, 2010
     # end_date = datetime.date(2014, 12, 31) #December end, 2014
 
-    # start_date = datetime.date(2005, 1, 1) #January 1st, 2005
-    # end_date = datetime.date(2009, 12, 31) #December end, 2009
+    start_date = datetime.date(2005, 1, 1) #January 1st, 2005
+    end_date = datetime.date(2009, 12, 31) #December end, 2009
 
     # start_date = datetime.date(2000, 1, 1) #January 1st, 2000
     # end_date = datetime.date(2004, 12, 31) #December end, 2004
+
+    # start_date = datetime.date(1995, 1, 1) #January 1st, 1995
+    # end_date = datetime.date(1999, 12, 31) #December end, 1999
 
     # MongoDB connection settings
     connection_string = "mongodb://192.168.0.131:27017/"
@@ -197,19 +200,21 @@ def main():
 
     # info - from 2020, 10 batches done of size 50 each - completed
 
-    # info - from 2015, 5 batches done of size 50
-    # info - from 2015, 6th batch (of size 50) needs to be done
+    # info - from 2015, 9 batches done of size 50
+    # info - from 2015, 10th batch (of size 50) needs to be done
 
-     # info - from 2010, 4 batches done of size 50
-    # info - from 2010, 5th batch (of size 50) needs to be done
+     # info - from 2010, 8 batches done of size 50
+    # info - from 2010, 9th batch (of size 50) needs to be done
 
-     # info - from 2005, 4 batches done of size 50
-    # info - from 2005, 5th batch (of size 50) needs to be done
+     # info - from 2005, 7 batches done of size 50
+    # info - from 2005, 8th batch (of size 50) needs to be done
 
-     # info - from 2000, 3 batches done of size 50
-    # info - from 2000, 4th batch (of size 50) needs to be done
+     # info - from 2000, 6 batches done of size 50
+    # info - from 2000, 7th batch (of size 50) needs to be done
 
-    batch_number_to_process = 6 #as per line 201
+    # info - from 1995, 1 batches done of size 50 - no need of further due to no data found
+
+    batch_number_to_process = 8 #as per line 204
     symbols_to_process = get_stock_symbols(connection_string, db_name, batch_number=batch_number_to_process)
 
     if not symbols_to_process:
