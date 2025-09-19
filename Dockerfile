@@ -18,5 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the project
 COPY . .
 
+# Make sure local package imports work (psx under /app/src)
+ENV PYTHONPATH=/app/src
+
 # Default command: run the cron job script
 CMD ["python", "-u", "src/psx/mongodb_example.py"]

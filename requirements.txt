@@ -2,3 +2,6 @@ pymongo>=4.3.3
 pandas>=1.5.3
 plotly>=5.13.1
 python-dotenv>=1.0.1
+beautifulsoup4>=4.12.3
+requests>=2.31.0
+tqdm>=4.66.4
