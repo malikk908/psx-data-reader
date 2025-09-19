@@ -105,43 +105,6 @@ def record_processed_interval(symbol, interval_start, interval_end, connection_s
         if 'client' in locals():
             client.close()
 
-def split_date_range(start_date, end_date, months=6):
-    """
-    Split a date range into intervals of specified months.
-    
-    Args:
-        start_date (datetime.date): Start date
-        end_date (datetime.date): End date
-        months (int): Number of months per interval
-        
-    Returns:
-        list: List of (interval_start, interval_end) tuples
-    """
-    intervals = []
-    current_start = start_date
-    
-    while current_start < end_date:
-        # Calculate the end of this interval (current_start + months)
-        # Add months by calculating year and month separately
-        year = current_start.year + ((current_start.month - 1 + months) // 12)
-        month = ((current_start.month - 1 + months) % 12) + 1
-        day = min(current_start.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 
-                                     31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
-        
-        interval_end = datetime.date(year, month, day)
-        
-        # If this interval would go past the end_date, cap it
-        if interval_end > end_date:
-            interval_end = end_date
-            
-        intervals.append((current_start, interval_end))
-        
-        # Move to the next interval
-        # Add one day to avoid overlapping dates
-        current_start = interval_end + datetime.timedelta(days=1)
-    
-    return intervals
-
 def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10):
     """
     Fetch stock symbols from the 'stock' collection in MongoDB, sorted by marketCap.
