@@ -175,11 +175,8 @@ def main():
     end_date = datetime.date.today()
     start_date = end_date - datetime.timedelta(days=3)
 
-    # start_date = datetime.date(2015, 1, 1) #January 1st, 2015
-    # end_date = datetime.date(2019, 12, 31) #December end, 2019
-
-    # start_date = datetime.date(2010, 1, 1) #January 1st, 2010
-    # end_date = datetime.date(2014, 12, 31) #December end, 2014
+    # start_date = datetime.date(2025, 9, 1) #September 1st, 2025
+    # end_date = datetime.date(2025, 9, 17) #September 17th, 2025
 
     # MongoDB connection settings via environment variables
     # Provide sensible defaults for local development
@@ -196,8 +193,9 @@ def main():
 
     # Batching and throttling configuration via environment variables
     batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "10"))
-    max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "1")  # default 1 for local testing
-    max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
+    # max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "1")  # default 1 for local testing
+    # max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
+    max_batches = None
 
     # Optional throttling controls
     symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "1"))
