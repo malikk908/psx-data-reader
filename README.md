@@ -89,10 +89,6 @@ source .venv/bin/activate
 
 # from your repo root
 python -m venv .venv
-
-.\.venv\Scripts\Activate
-source .venv/bin/activate
-
 python -m pip install --upgrade pip
 python -m pip install -e .
 python -m pip install -r requirements.txt
@@ -110,6 +106,48 @@ python src/psx/mongodb_example.py
 # or
 python -m psx.mongodb_example
 
+
+## Deploy as a scheduled job on Railway
+
+This repo includes a `Dockerfile` and `.dockerignore` so you can deploy as a Railway service and attach a Schedule to run daily.
+
+Steps:
+
+1. Push this repo to GitHub (with the provided `Dockerfile`).
+2. In Railway, create a new project → Deploy from GitHub → select this repo.
+3. In your service → Variables, set the following environment variables:
+
+```
+FINHISAAB_MONGO_URI=your-mongodb-uri
+FINHISAAB_DB_NAME=finhisaab
+FINHISAAB_COLLECTION=stockpricehistories
+FINHISAAB_BATCH_SIZE=10
+# Optional for testing a single batch
+FINHISAAB_MAX_BATCHES=1
+
+# Delays (seconds)
+FINHISAAB_SYMBOL_DELAY_MIN=1
+FINHISAAB_SYMBOL_DELAY_MAX=2
+FINHISAAB_BATCH_DELAY_MIN=10
+FINHISAAB_BATCH_DELAY_MAX=20
+
+# Optional timezone for in-container date calculations (Dockerfile sets Asia/Karachi by default)
+TZ=Asia/Karachi
+```
+
+4. Add a Schedule in Railway (cron expression is in UTC). Example: run daily at 22:00 UTC (03:00 PKT):
+
+```
+0 22 * * *
+```
+
+The service’s default command (from the `Dockerfile`) executes:
+
+```
+python -u src/psx/mongodb_example.py
+```
+
+Logs are visible in Railway’s Deployments → Logs. The script performs an early MongoDB connectivity check and exits if unreachable.
 
 mongodump --uri mongodb://192.168.0.131:27017/finhisaab --collection=stockpricehistories
 mongorestore --uri <uri> --nsInclude=finhisaab.stockpricehistories

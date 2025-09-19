@@ -33,6 +33,7 @@ def is_interval_processed(symbol, interval_start, interval_end, connection_strin
     Returns:
         bool: True if the interval has been processed, False otherwise
     """
+    client = None
     try:
         # Connect to MongoDB
         client = MongoClient(connection_string)
@@ -57,8 +58,33 @@ def is_interval_processed(symbol, interval_start, interval_end, connection_strin
         print(f"Error checking processed intervals: {e}")
         return False
     finally:
-        if 'client' in locals():
+        if client is not None:
             client.close()
+
+def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
+    """
+    Perform a quick connectivity test to MongoDB.
+
+    Attempts to connect and run a simple ping command. Returns True if
+    successful, False otherwise.
+    """
+    try:
+        client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
+        # Run a simple admin ping to verify connectivity
+        client.admin.command('ping')
+        # Optionally touch the target DB to ensure we can access it
+        _ = client[db_name].name
+        print(f"MongoDB connectivity OK for {connection_string} (db: {db_name})")
+        return True
+    except Exception as e:
+        print(f"MongoDB connectivity check FAILED: {e}")
+        return False
+    finally:
+        try:
+            if 'client' in locals():
+                client.close()
+        except Exception:
+            pass
 
 def record_processed_interval(symbol, interval_start, interval_end, connection_string, db_name, no_data_found=False):
     """
@@ -118,6 +144,7 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10)
     Returns:
         list: A list of stock symbols.
     """
+    client = None
     try:
         client = MongoClient(connection_string)
         db = client[db_name]
@@ -159,6 +186,11 @@ def main():
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
     db_name = os.getenv("FINHISAAB_DB_NAME", "finhisaab")
     collection_name = os.getenv("FINHISAAB_COLLECTION", "stockpricehistories")
+
+    # Early connectivity test to fail fast if DB is unreachable
+    if not test_mongo_connectivity(connection_string, db_name):
+        print("Exiting due to MongoDB connectivity failure.")
+        return
 
     # --- Fetch stock symbols from MongoDB in batches and process ---
 
