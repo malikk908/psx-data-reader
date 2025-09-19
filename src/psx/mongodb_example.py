@@ -134,7 +134,7 @@ def split_date_range(start_date, end_date, months=6):
     
     return intervals
 
-def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=50):
+def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10):
     """
     Fetch stock symbols from the 'stock' collection in MongoDB, sorted by marketCap.
 
@@ -171,9 +171,11 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=50)
             client.close()
 
 def main():
-    # Define the stock symbol and date range
-    # start_date = datetime.date(2020, 1, 1) #January 1st, 2020
-    # end_date = datetime.date(2025, 8, 31) #August end, 2025
+    # Define the dynamic date range for daily cron run
+    # Start date: 3 days before current date
+    # End date: current date
+    end_date = datetime.date.today()
+    start_date = end_date - datetime.timedelta(days=3)
 
     # start_date = datetime.date(2015, 1, 1) #January 1st, 2015
     # end_date = datetime.date(2019, 12, 31) #December end, 2019
@@ -195,120 +197,127 @@ def main():
     db_name = "finhisaab"
     collection_name = "stockpricehistories"
 
-    # --- Fetch stock symbols from MongoDB ---
-    # Change the batch_number to process different sets of 50 stocks
+    # --- Fetch stock symbols from MongoDB in batches and process ---
 
-    # info - from 2020, 10 batches done of size 50 each - completed
+    batch_size = 10
+    batch_number = 1
 
-    # info - from 2015, 9 batches done of size 50
-    # info - from 2015, 10th batch (of size 50) needs to be done
-
-     # info - from 2010, 8 batches done of size 50
-    # info - from 2010, 9th batch (of size 50) needs to be done
-
-     # info - from 2005, 7 batches done of size 50
-    # info - from 2005, 8th batch (of size 50) needs to be done
-
-     # info - from 2000, 6 batches done of size 50
-    # info - from 2000, 7th batch (of size 50) needs to be done
-
-    # info - from 1995, 1 batches done of size 50 - no need of further due to no data found
-
-    batch_number_to_process = 8 #as per line 204
-    symbols_to_process = get_stock_symbols(connection_string, db_name, batch_number=batch_number_to_process)
-
-    if not symbols_to_process:
-        print("No stock symbols found or an error occurred. Exiting.")
-        return
-
-    print(f"Found {len(symbols_to_process)} symbols to process in batch #{batch_number_to_process}.")
-
-    # --- Loop over each symbol and process it ---
-    for i, symbol in enumerate(symbols_to_process):
+    while True:
         print(f"\n{'='*50}")
-        print(f"Processing symbol: {symbol}")
-        print(f"Fetching data for {symbol} from {start_date} to {end_date}")
-        
-        # Split the date range into 6-month intervals
-        intervals = split_date_range(start_date, end_date, months=12)
-        print(f"Split into {len(intervals)} intervals.")
+        print(f"Fetching batch #{batch_number} of up to {batch_size} symbols...")
+        symbols_to_process = get_stock_symbols(
+            connection_string,
+            db_name,
+            batch_number=batch_number,
+            batch_size=batch_size
+        )
 
-        # Fetch data for each interval
-        for interval_index, (interval_start, interval_end) in enumerate(intervals):
-            print(f"\n  Processing interval {interval_index+1}/{len(intervals)}: {interval_start} to {interval_end}")
-            
-            # Check if this interval has already been processed
-            if is_interval_processed(symbol, interval_start, interval_end, connection_string, db_name):
-                print(f"    Interval already processed for {symbol}. Skipping...")
+        if not symbols_to_process:
+            print("No more stock symbols found or an error occurred. Exiting batch loop.")
+            break
+
+        print(f"Found {len(symbols_to_process)} symbols to process in batch #{batch_number}.")
+
+        # Try to fetch data for the whole batch in a single call
+        batch_data = None
+        try:
+            print(f"Attempting batch fetch for symbols: {symbols_to_process}")
+            batch_data = stocks(symbols_to_process, start=start_date, end=end_date)
+        except Exception as e:
+            print(f"Batch fetch failed; will fallback to per-symbol fetch. Error: {e}")
+            batch_data = None
+
+        for i, symbol in enumerate(symbols_to_process):
+            print(f"\nProcessing symbol: {symbol} for range {start_date} to {end_date}")
+
+            # Skip if already processed for this full range
+            if is_interval_processed(symbol, start_date, end_date, connection_string, db_name):
+                print(f"Already processed for this date range. Skipping {symbol}...")
                 continue
-                
-            print(f"    Fetching data for {symbol}...")
-            
-            # Fetch stock data for this interval
+
+            # Resolve the DataFrame for this symbol
             try:
-                interval_data = stocks(symbol, start=interval_start, end=interval_end)
-                if interval_data.empty:
-                    print(f"    No data found for {symbol} in this interval.")
-                    # Record this interval as processed with a no_data_found flag
+                symbol_df = None
+                if isinstance(batch_data, dict) and symbol in batch_data:
+                    symbol_df = batch_data[symbol]
+                elif isinstance(batch_data, pd.DataFrame):
+                    # If the batch data is a MultiIndex DataFrame with 'Ticker' level, slice it
+                    try:
+                        df_candidate = batch_data
+                        index_names = list(df_candidate.index.names or [])
+                        if 'Ticker' in index_names:
+                            symbol_df = df_candidate.xs(symbol, level='Ticker')
+                    except Exception:
+                        symbol_df = None
+                
+                # Fallback to single-symbol fetch if needed
+                if symbol_df is None:
+                    print("Fetching individually for symbol due to unavailable batch data slice...")
+                    symbol_df = stocks(symbol, start=start_date, end=end_date)
+
+                if symbol_df is None or symbol_df.empty:
+                    print(f"No data found for {symbol} in this range.")
                     record_result = record_processed_interval(
                         symbol,
-                        interval_start,
-                        interval_end,
+                        start_date,
+                        end_date,
                         connection_string,
                         db_name,
                         no_data_found=True
                     )
                     if record_result:
-                        print(f"    Interval recorded as processed (no data) for {symbol}")
+                        print(f"Recorded as processed (no data) for {symbol}")
                     else:
-                        print(f"    Failed to record interval as processed (no data) for {symbol}")
+                        print(f"Failed to record as processed (no data) for {symbol}")
                     continue
-                print(f"    Retrieved {len(interval_data)} records for {symbol}")
+                else:
+                    print(f"Retrieved {len(symbol_df)} records for {symbol}")
             except Exception as e:
-                print(f"    An error occurred while fetching data for {symbol}: {e}")
-                continue # Move to the next interval
+                print(f"An error occurred while fetching data for {symbol}: {e}")
+                continue
 
-            # Save this interval's data to MongoDB
-            print(f"    Saving interval data to MongoDB ({db_name}.{collection_name})...")
+            # Save data to MongoDB
+            print(f"Saving data to MongoDB ({db_name}.{collection_name}) for {symbol}...")
             success, message = save_to_mongodb(
-                df=interval_data,
+                df=symbol_df,
                 symbol=symbol,
                 connection_string=connection_string,
                 db_name=db_name,
                 collection_name=collection_name
             )
-            print(f"    MongoDB Save Result: {'Success' if success else 'Failed'}")
-            print(f"    Message: {message}")
-            
-            # If save was successful, record this interval as processed
+            print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
+            print(f"Message: {message}")
+
+            # Record as processed for this entire range
             if success:
                 record_result = record_processed_interval(
-                    symbol, 
-                    interval_start, 
-                    interval_end, 
-                    connection_string, 
+                    symbol,
+                    start_date,
+                    end_date,
+                    connection_string,
                     db_name,
                     no_data_found=False
                 )
                 if record_result:
-                    print(f"    Interval recorded as processed for {symbol}")
+                    print(f"Recorded as processed for {symbol}")
                 else:
-                    print(f"    Failed to record interval as processed for {symbol}")
-            
-            # Add random delay between API calls
-            if interval_index < len(intervals) - 1:
-                delay = random.uniform(2, 4)
-                print(f"    Waiting {delay:.2f} seconds before next request...")
+                    print(f"Failed to record as processed for {symbol}")
+
+            # Delay between symbols to avoid overload
+            if i < len(symbols_to_process) - 1:
+                delay = random.uniform(1, 2)
+                print(f"Waiting {delay:.2f} seconds before next symbol...")
                 time.sleep(delay)
 
-        # Add random delay between processing different stocks
-        if i < len(symbols_to_process) - 1:
-            delay = random.uniform(3, 4)
-            print(f"\nWaiting {delay:.2f} seconds before processing the next stock...")
-            time.sleep(delay)
+        # Delay between batches
+        batch_delay = random.uniform(5, 7)
+        print(f"\nCompleted batch #{batch_number}. Waiting {batch_delay:.2f} seconds before next batch...")
+        time.sleep(batch_delay)
+
+        batch_number += 1
 
     print(f"\n{'='*50}")
-    print("All specified stock symbols and their intervals processed.")
+    print("All batches processed for the current run.")
  
 
 if __name__ == "__main__":
