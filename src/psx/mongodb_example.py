@@ -8,8 +8,16 @@ import datetime
 import time
 import random
 import pandas as pd
+import os
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
+
+# Load environment variables from a .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv()
+except Exception:
+    pass
 
 def is_interval_processed(symbol, interval_start, interval_end, connection_string, db_name):
     """
@@ -183,24 +191,27 @@ def main():
     # start_date = datetime.date(2010, 1, 1) #January 1st, 2010
     # end_date = datetime.date(2014, 12, 31) #December end, 2014
 
-    start_date = datetime.date(2005, 1, 1) #January 1st, 2005
-    end_date = datetime.date(2009, 12, 31) #December end, 2009
-
-    # start_date = datetime.date(2000, 1, 1) #January 1st, 2000
-    # end_date = datetime.date(2004, 12, 31) #December end, 2004
-
-    # start_date = datetime.date(1995, 1, 1) #January 1st, 1995
-    # end_date = datetime.date(1999, 12, 31) #December end, 1999
-
-    # MongoDB connection settings
-    connection_string = "mongodb://192.168.0.131:27017/"
-    db_name = "finhisaab"
-    collection_name = "stockpricehistories"
+    # MongoDB connection settings via environment variables
+    # Provide sensible defaults for local development
+    connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
+    db_name = os.getenv("FINHISAAB_DB_NAME", "finhisaab")
+    collection_name = os.getenv("FINHISAAB_COLLECTION", "stockpricehistories")
 
     # --- Fetch stock symbols from MongoDB in batches and process ---
 
-    batch_size = 10
+    # Batching and throttling configuration via environment variables
+    batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "10"))
+    max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "1")  # default 1 for local testing
+    max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
+
+    # Optional throttling controls
+    symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "1"))
+    symbol_delay_max = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MAX", "2"))
+    batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
+    batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
+
     batch_number = 1
+    processed_batches = 0
 
     while True:
         print(f"\n{'='*50}")
@@ -305,16 +316,22 @@ def main():
 
             # Delay between symbols to avoid overload
             if i < len(symbols_to_process) - 1:
-                delay = random.uniform(1, 2)
+                delay = random.uniform(symbol_delay_min, symbol_delay_max)
                 print(f"Waiting {delay:.2f} seconds before next symbol...")
                 time.sleep(delay)
 
         # Delay between batches
-        batch_delay = random.uniform(5, 7)
+        batch_delay = random.uniform(batch_delay_min, batch_delay_max)
         print(f"\nCompleted batch #{batch_number}. Waiting {batch_delay:.2f} seconds before next batch...")
         time.sleep(batch_delay)
 
         batch_number += 1
+        processed_batches += 1
+
+        # If max_batches is set (e.g., for local testing), stop after processing that many batches
+        if max_batches is not None and processed_batches >= max_batches:
+            print(f"Reached FINHISAAB_MAX_BATCHES={max_batches}. Stopping further batch processing for this run.")
+            break
 
     print(f"\n{'='*50}")
     print("All batches processed for the current run.")
