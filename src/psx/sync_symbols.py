@@ -62,6 +62,11 @@ def main():
     for item in psx_data:
         if item.get('isDebt', False):
             continue
+            
+        name = item.get('name', '').strip()
+        if not name or '(r)' in name.lower() or name == '()':
+            continue
+            
         psx_symbols_dict[item['symbol']] = item
     
     print("Connecting to MongoDB to get existing symbols...")
