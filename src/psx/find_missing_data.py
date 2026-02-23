@@ -99,10 +99,11 @@ def find_missing_dates(symbol, start_date, end_date, connection_string, db_name,
         if 'client' in locals() and client:
             client.close()
 
-def group_missing_dates(missing_dates):
+def group_missing_dates(missing_dates, max_ignored_gap_size=1):
     """
     Groups a sorted list of consecutive dates into ranges (Start Date -> End Date).
     Returns a list of dictionaries: [{'start': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'}, ...]
+    Ranges with a business day duration <= max_ignored_gap_size are ignored.
     """
     if not missing_dates:
         return []
@@ -120,18 +121,21 @@ def group_missing_dates(missing_dates):
         if diff <= 3: # Consecutive business days could be Friday->Monday (3 days diff)
             current_end = next_dt
         else:
-            ranges.append({
-                "start": current_start.strftime('%Y-%m-%d'),
-                "end": current_end.strftime('%Y-%m-%d')
-            })
+            # Check length of gap in business days
+            if len(pd.bdate_range(current_start, current_end)) > max_ignored_gap_size:
+                ranges.append({
+                    "start": current_start.strftime('%Y-%m-%d'),
+                    "end": current_end.strftime('%Y-%m-%d')
+                })
             current_start = next_dt
             current_end = next_dt
 
     # Append the last range
-    ranges.append({
-        "start": current_start.strftime('%Y-%m-%d'),
-        "end": current_end.strftime('%Y-%m-%d')
-    })
+    if len(pd.bdate_range(current_start, current_end)) > max_ignored_gap_size:
+        ranges.append({
+            "start": current_start.strftime('%Y-%m-%d'),
+            "end": current_end.strftime('%Y-%m-%d')
+        })
 
     return ranges
 
@@ -179,6 +183,9 @@ def main():
     max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "None")  
     max_batches = int(max_batches_env) if max_batches_env and max_batches_env.strip().isdigit() else None
     
+    # Gap filtering configuration
+    max_ignored_gap_size = int(os.getenv("FINHISAAB_MAX_IGNORED_GAP_SIZE", "1"))
+
     # Output file
     output_filename = "missing_data_report.json"
 
@@ -213,12 +220,16 @@ def main():
             )
 
             if missing_dates:
-                ranges = group_missing_dates(missing_dates)
-                all_missing_data[symbol] = ranges
-                total_symbols_with_gaps += 1
-                print(f"[{symbol}] Missing {len(missing_dates)} business days -> {len(ranges)} date ranges")
-                for r in ranges:
-                    print(f"  - {r['start']} to {r['end']}")
+                ranges = group_missing_dates(missing_dates, max_ignored_gap_size)
+                
+                if ranges:
+                    all_missing_data[symbol] = ranges
+                    total_symbols_with_gaps += 1
+                    print(f"[{symbol}] Missing {len(missing_dates)} business days -> {len(ranges)} date ranges (> {max_ignored_gap_size} days)")
+                    for r in ranges:
+                        print(f"  - {r['start']} to {r['end']}")
+                else:
+                    print(f"[{symbol}] Data completely up to date (or only small gaps <= {max_ignored_gap_size} days).")
             else:
                 print(f"[{symbol}] Data completely up to date.")
 
