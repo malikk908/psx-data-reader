@@ -83,6 +83,11 @@ def main():
     for i, (start_str, end_str) in enumerate(unique_ranges):
         symbols_to_process = ranges_to_symbols[(start_str, end_str)]
         
+        # Skip ranges that have 1 or 2 symbols (user will handle them later)
+        if len(symbols_to_process) <= 2:
+            print(f"\nSkipping range [{i+1}/{len(unique_ranges)}]: {start_str} to {end_str} as it only has {len(symbols_to_process)} symbol(s).")
+            continue
+        
         # Convert strings to datetime.date objects for the psx module
         start_date = datetime.datetime.strptime(start_str, "%Y-%m-%d").date()
         end_date = datetime.datetime.strptime(end_str, "%Y-%m-%d").date()
