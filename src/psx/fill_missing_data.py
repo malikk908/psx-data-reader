@@ -68,6 +68,15 @@ def main():
             ranges_to_symbols[key].append(symbol)
             
     unique_ranges = list(ranges_to_symbols.keys())
+    
+    # Sort the unique ranges by duration in descending order (longest first)
+    def get_duration(date_range):
+        start_d = datetime.datetime.strptime(date_range[0], "%Y-%m-%d").date()
+        end_d = datetime.datetime.strptime(date_range[1], "%Y-%m-%d").date()
+        return (end_d - start_d).days
+
+    unique_ranges.sort(key=get_duration, reverse=True)
+
     print(f"Found {len(unique_ranges)} unique missing date ranges across {len(missing_data)} symbols.")
     print("-" * 50)
 
