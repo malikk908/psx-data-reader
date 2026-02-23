@@ -172,12 +172,12 @@ def main():
     # Define the dynamic date range for daily cron run
     # Start date: 3 days before current date
     # End date: current date
+    # end_date = datetime.date.today()
+    # start_date = end_date - datetime.timedelta(days=3)
+
+    start_date = datetime.date(2025, 9, 20) #September 1st, 2025
+    # end_date = datetime.date(2025, 9, 30) #September 17th, 2025
     end_date = datetime.date.today()
-    start_date = end_date - datetime.timedelta(days=3)
-
-    # start_date = datetime.date(2025, 9, 1) #September 1st, 2025
-    # end_date = datetime.date(2025, 9, 17) #September 17th, 2025
-
     # MongoDB connection settings via environment variables
     # Provide sensible defaults for local development
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
@@ -195,7 +195,7 @@ def main():
     batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "10"))
     # max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "1")  # default 1 for local testing
     # max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
-    max_batches = None
+    max_batches = int(os.getenv("FINHISAAB_MAX_BATCHES", "20"))
 
     # Optional throttling controls
     symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "1"))
@@ -203,7 +203,7 @@ def main():
     batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
     batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
 
-    batch_number = 1
+    batch_number = 41
     processed_batches = 0
 
     while True:
