@@ -8,6 +8,7 @@ import json
 import time
 import random
 import datetime
+import argparse
 import pandas as pd
 import math
 from psx import stocks
@@ -33,6 +34,10 @@ def load_missing_data_report(filepath="missing_data_report.json"):
         return None
 
 def main():
+    parser = argparse.ArgumentParser(description="Fill missing PSX data")
+    parser.add_argument("--by-symbol", action="store_true", help="Loop by symbol instead of date periods")
+    args = parser.parse_args()
+
     # --- Configuration ---
     input_file = "missing_data_report.json"
     
@@ -55,6 +60,91 @@ def main():
     
     if not missing_data:
         print("No missing data found or file could not be read. Exiting.")
+        return
+
+    if args.by_symbol:
+        print(f"Running in BY-SYMBOL mode across {len(missing_data)} symbols.")
+        print("-" * 50)
+        symbols = list(missing_data.keys())
+        for symbol_idx, symbol in enumerate(symbols):
+            ranges = missing_data[symbol]
+            print(f"\nProcessing symbol [{symbol_idx+1}/{len(symbols)}]: {symbol} ({len(ranges)} missing ranges)")
+            
+            ranges_to_remove = []
+            
+            for range_idx, r in enumerate(ranges):
+                start_str, end_str = r['start'], r['end']
+                start_date = datetime.datetime.strptime(start_str, "%Y-%m-%d").date()
+                end_date = datetime.datetime.strptime(end_str, "%Y-%m-%d").date()
+                
+                print(f"  -> Range [{range_idx+1}/{len(ranges)}]: {start_date} to {end_date}...")
+                
+                try:
+                    df = stocks([symbol], start=start_date, end=end_date)
+                    
+                    if df is None or (isinstance(df, pd.DataFrame) and df.empty):
+                        print("    -> No data found from PSX for this range.")
+                        ranges_to_remove.append(r)
+                        continue
+                        
+                    symbol_df = None
+                    if isinstance(df, dict) and symbol in df:
+                        symbol_df = df[symbol]
+                    elif isinstance(df, pd.DataFrame):
+                        try:
+                            index_names = list(df.index.names or [])
+                            if 'Ticker' in index_names:
+                                symbol_df = df.xs(symbol, level='Ticker')
+                            else:
+                                symbol_df = df
+                        except Exception:
+                            symbol_df = None
+                            
+                    if symbol_df is None or symbol_df.empty:
+                        print(f"    -> [ {symbol} ] No data found in retrieved batch.")
+                        ranges_to_remove.append(r)
+                        continue
+                        
+                    success, message = save_to_mongodb(
+                        df=symbol_df,
+                        symbol=symbol,
+                        connection_string=connection_string,
+                        db_name=db_name,
+                        collection_name=collection_name
+                    )
+                    
+                    if not success:
+                        print(f"    -> [ {symbol} ] Failed to save: {message}")
+                    else:
+                        print(f"    -> [ {symbol} ] Saved {len(symbol_df)} records.")
+                        ranges_to_remove.append(r)
+                        
+                except Exception as e:
+                    print(f"    -> Error fetching or saving data: {e}")
+                    
+                if range_idx < len(ranges) - 1:
+                    time.sleep(random.uniform(symbol_delay_min, symbol_delay_max))
+                    
+            if ranges_to_remove:
+                missing_data[symbol] = [r for r in missing_data[symbol] if r not in ranges_to_remove]
+                if not missing_data[symbol]:
+                    del missing_data[symbol]
+                    
+                try:
+                    with open(input_file, 'w') as f:
+                        json.dump(missing_data, f, indent=4)
+                    print(f"  -> Progress saved for {symbol}.")
+                except Exception as e:
+                    print(f"  -> Warning: Failed to update progress in {input_file}: {e}")
+                    
+            if symbol_idx < len(symbols) - 1:
+                delay = random.uniform(batch_delay_min, batch_delay_max)
+                print(f"Waiting {delay:.2f} seconds before next symbol...")
+                time.sleep(delay)
+
+        print("\n" + "=" * 50)
+        print("FINISHED FILLING MISSING DATA (BY SYMBOL)")
+        print("=" * 50)
         return
 
     # Restructure: Group by date range
