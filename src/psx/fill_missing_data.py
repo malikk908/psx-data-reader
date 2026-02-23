@@ -42,10 +42,10 @@ def main():
     collection_name = os.getenv("FINHISAAB_COLLECTION", "stockpricehistories")
 
     # Throttling controls
-    symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "1"))
-    symbol_delay_max = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MAX", "2"))
-    batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
-    batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
+    symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "0.5"))
+    symbol_delay_max = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MAX", "1.0"))
+    batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "1.0"))
+    batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "3.0"))
     
     # Sub-batching setting for large lists of symbols
     fetch_batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "10"))
