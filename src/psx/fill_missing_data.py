@@ -8,6 +8,7 @@ import json
 import time
 import random
 import datetime
+import pandas as pd
 from psx import stocks
 from psx.data_store import save_to_mongodb
 
