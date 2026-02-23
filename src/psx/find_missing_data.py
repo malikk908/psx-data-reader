@@ -138,8 +138,8 @@ def group_missing_dates(missing_dates):
 def main():
     # --- Configuration ---
     # Configure the global date range you want to check for missing data
-    start_date = datetime.date(2025, 1, 1)
-    end_date = datetime.date(2025, 9, 30)
+    start_date = datetime.date(2020, 1, 1)
+    end_date = datetime.date(2025, 9, 26)
 
     # Exclusions
     exclusions = [
@@ -151,6 +151,22 @@ def main():
             "start": "2025-03-28",
             "end": "2025-04-02"
         },
+        {
+            "start": "2025-05-01",
+            "end": "2025-05-01"
+        },
+        {
+            "start": "2025-05-28",
+            "end": "2025-05-28"
+        },
+        {
+            "start": "2025-06-06",
+            "end": "2025-06-09"
+        },
+        {
+            "start": "2025-08-14",
+            "end": "2025-08-14"
+        }
     ]
 
     # MongoDB connection settings via environment variables
