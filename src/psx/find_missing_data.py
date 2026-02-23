@@ -47,7 +47,7 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10)
         if 'client' in locals() and client:
             client.close()
 
-def find_missing_dates(symbol, start_date, end_date, connection_string, db_name, collection_name):
+def find_missing_dates(symbol, start_date, end_date, connection_string, db_name, collection_name, exclusions=None):
     """
     Finds missing business dates in MongoDB for a specific stock within a date range.
     Returns a list of missing dates (as datetime.date objects).
@@ -78,6 +78,14 @@ def find_missing_dates(symbol, start_date, end_date, connection_string, db_name,
         # 2. Generate expected business dates (Mon-Fri)
         expected_dates = pd.bdate_range(start=start_date, end=end_date)
         expected_dates_set = {pd.Timestamp(dt).date() for dt in expected_dates}
+
+        if exclusions:
+            for ex in exclusions:
+                ex_start = datetime.datetime.strptime(ex['start'], "%Y-%m-%d").date()
+                ex_end = datetime.datetime.strptime(ex['end'], "%Y-%m-%d").date()
+                ex_dates = pd.bdate_range(start=ex_start, end=ex_end)
+                ex_dates_set = {pd.Timestamp(dt).date() for dt in ex_dates}
+                expected_dates_set -= ex_dates_set
 
         # 3. Find missing dates
         missing_dates = sorted(list(expected_dates_set - db_dates))
@@ -133,6 +141,18 @@ def main():
     start_date = datetime.date(2025, 1, 1)
     end_date = datetime.date(2025, 9, 30)
 
+    # Exclusions
+    exclusions = [
+        {
+            "start": "2025-02-05",
+            "end": "2025-02-05"
+        },
+        {
+            "start": "2025-03-28",
+            "end": "2025-04-02"
+        },
+    ]
+
     # MongoDB connection settings via environment variables
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://127.0.0.1:27017/")
     db_name = os.getenv("FINHISAAB_DB_NAME", "finhisaab")
@@ -172,7 +192,8 @@ def main():
         for symbol in symbols_to_process:
             missing_dates = find_missing_dates(
                 symbol, start_date, end_date, 
-                connection_string, db_name, collection_name
+                connection_string, db_name, collection_name,
+                exclusions
             )
 
             if missing_dates:
