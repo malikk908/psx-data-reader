@@ -75,11 +75,31 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10)
             client.close()
 
 def main():
-    # Define the dynamic date range for daily cron run
-    # Start date: yesterday
-    # End date: today
-    end_date = datetime.date.today()
-    start_date = end_date - datetime.timedelta(days=1)
+    # Check if today is Sunday (6)
+    today = datetime.date.today()
+    weekday = today.weekday()
+    
+    if weekday == 6:
+        print(f"Today is Sunday ({today}). Skipping PSX data fetch as it's a holiday.")
+        return
+
+    # Define the dynamic date range based on the day of the week
+    if weekday == 0:  # Monday
+        # On Monday, just fetch today's data (skip Sunday)
+        start_date = today
+        end_date = today
+        print(f"Monday run detected. Fetching data only for today: {today}")
+    elif weekday == 5:  # Saturday
+        # On Saturday, fetch yesterday's (Friday's) data
+        friday = today - datetime.timedelta(days=1)
+        start_date = friday
+        end_date = friday
+        print(f"Saturday run detected. Fetching data for Friday: {friday}")
+    else:
+        # Tuesday-Friday: Fetch yesterday and today
+        start_date = today - datetime.timedelta(days=1)
+        end_date = today
+        print(f"Weekday run detected. Fetching data from {start_date} to {end_date}")
 
     # MongoDB connection settings via environment variables
     # Provide sensible defaults for local development
