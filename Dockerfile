@@ -9,6 +9,9 @@ RUN apt-get update \
 # Set timezone (can be overridden by env on Railway)
 ENV TZ=Asia/Karachi
 
+# Ensure Python output is logged immediately in Railway
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Install Python dependencies first (better layer caching)
@@ -22,4 +25,4 @@ COPY . .
 ENV PYTHONPATH=/app/src
 
 # Default command: run the cron job script
-CMD ["python", "-u", "src/psx/mongodb_example.py"]
+# CMD ["python", "-u", "src/psx/mongodb_cron.py"] //will run through railway cron
