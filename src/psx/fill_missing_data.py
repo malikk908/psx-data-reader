@@ -52,58 +52,80 @@ def main():
         print("No missing data found or file could not be read. Exiting.")
         return
 
-    symbols = list(missing_data.keys())
-    print(f"Found {len(symbols)} symbols with missing data to process.")
+    # Restructure: Group by date range
+    # {(start_date_str, end_date_str): [symbol1, symbol2, ...]}
+    ranges_to_symbols = {}
+    for symbol, ranges in missing_data.items():
+        for r in ranges:
+            key = (r['start'], r['end'])
+            if key not in ranges_to_symbols:
+                ranges_to_symbols[key] = []
+            ranges_to_symbols[key].append(symbol)
+            
+    unique_ranges = list(ranges_to_symbols.keys())
+    print(f"Found {len(unique_ranges)} unique missing date ranges across {len(missing_data)} symbols.")
     print("-" * 50)
 
-    for i, symbol in enumerate(symbols):
-        ranges = missing_data[symbol]
-        print(f"\nProcessing symbol: {symbol} ({len(ranges)} missing ranges)")
+    for i, (start_str, end_str) in enumerate(unique_ranges):
+        symbols_to_process = ranges_to_symbols[(start_str, end_str)]
         
-        for r_idx, r in enumerate(ranges):
-            start_str = r['start']
-            end_str = r['end']
+        # Convert strings to datetime.date objects for the psx module
+        start_date = datetime.datetime.strptime(start_str, "%Y-%m-%d").date()
+        end_date = datetime.datetime.strptime(end_str, "%Y-%m-%d").date()
+        
+        print(f"\nProcessing range [{i+1}/{len(unique_ranges)}]: {start_date} to {end_date} for {len(symbols_to_process)} symbols")
+        
+        try:
+            # Fetch data directly from PSX for all symbols in this date range
+            batch_data = stocks(symbols_to_process, start=start_date, end=end_date)
             
-            # Convert strings to datetime.date objects for the psx module
-            start_date = datetime.datetime.strptime(start_str, "%Y-%m-%d").date()
-            end_date = datetime.datetime.strptime(end_str, "%Y-%m-%d").date()
-            
-            print(f"  Fetching [{r_idx+1}/{len(ranges)}]: {start_date} to {end_date}...")
-            
-            try:
-                # Fetch data directly from PSX
-                symbol_df = stocks(symbol, start=start_date, end=end_date)
+            if batch_data is None or (isinstance(batch_data, pd.DataFrame) and batch_data.empty):
+                print(f"  -> No data found from PSX for this specific range for any symbols.")
+                continue
+                
+            for symbol in symbols_to_process:
+                # Resolve the DataFrame for this symbol
+                symbol_df = None
+                if isinstance(batch_data, dict) and symbol in batch_data:
+                    symbol_df = batch_data[symbol]
+                elif isinstance(batch_data, pd.DataFrame):
+                    try:
+                        index_names = list(batch_data.index.names or [])
+                        if 'Ticker' in index_names:
+                            symbol_df = batch_data.xs(symbol, level='Ticker')
+                        else:
+                            # If it's a single symbol fetch disguised as batch, or something else
+                            # and it matches the single symbol we're expecting
+                            if len(symbols_to_process) == 1:
+                                symbol_df = batch_data
+                    except Exception:
+                        symbol_df = None
                 
                 if symbol_df is None or symbol_df.empty:
-                    print(f"  -> No data found from PSX for this specific range.")
-                else:
-                    print(f"  -> Retrieved {len(symbol_df)} records. Saving to MongoDB...")
-                    
-                    # Save data to MongoDB (this does an upsert, safely handling overlaps)
-                    success, message = save_to_mongodb(
-                        df=symbol_df,
-                        symbol=symbol,
-                        connection_string=connection_string,
-                        db_name=db_name,
-                        collection_name=collection_name
-                    )
-                    
-                    if not success:
-                        print(f"  -> Failed to save: {message}")
-                    else:
-                        print(f"  -> Successfully saved.")
+                    print(f"  -> [ {symbol} ] No data found in batch.")
+                    continue
                 
-            except Exception as e:
-                print(f"  -> Error fetching or saving data: {e}")
+                # Save data to MongoDB (this does an upsert, safely handling overlaps)
+                success, message = save_to_mongodb(
+                    df=symbol_df,
+                    symbol=symbol,
+                    connection_string=connection_string,
+                    db_name=db_name,
+                    collection_name=collection_name
+                )
+                
+                if not success:
+                    print(f"  -> [ {symbol} ] Failed to save: {message}")
+                else:
+                    print(f"  -> [ {symbol} ] Saved {len(symbol_df)} records.")
             
-            # Small delay between individual date ranges for the same symbol to avoid rate limits
-            if r_idx < len(ranges) - 1:
-                time.sleep(1)
-
-        # Longer delay between different symbols to avoid overload
-        if i < len(symbols) - 1:
-            delay = random.uniform(symbol_delay_min, symbol_delay_max)
-            print(f"Waiting {delay:.2f} seconds before next symbol...")
+        except Exception as e:
+            print(f"  -> Error fetching or saving batch data: {e}")
+        
+        # Delay between different date ranges to avoid rate limits
+        if i < len(unique_ranges) - 1:
+            delay = random.uniform(batch_delay_min, batch_delay_max)
+            print(f"Waiting {delay:.2f} seconds before next date range...")
             time.sleep(delay)
 
     print("\n" + "=" * 50)
