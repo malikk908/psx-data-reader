@@ -1,5 +1,5 @@
 """
-Example script demonstrating how to fetch PSX data and store it in MongoDB.
+Script for daily cron job to fetch PSX data and store it in MongoDB.
 """
 
 from psx import stocks
@@ -19,47 +19,6 @@ try:
 except Exception:
     pass
 
-def is_interval_processed(symbol, interval_start, interval_end, connection_string, db_name):
-    """
-    Check if a specific interval for a stock has already been processed and stored in MongoDB.
-    
-    Args:
-        symbol (str): Stock symbol
-        interval_start (datetime.date): Start date of the interval
-        interval_end (datetime.date): End date of the interval
-        connection_string (str): MongoDB connection string
-        db_name (str): MongoDB database name
-        
-    Returns:
-        bool: True if the interval has been processed, False otherwise
-    """
-    client = None
-    try:
-        # Connect to MongoDB
-        client = MongoClient(connection_string)
-        db = client[db_name]
-        processed_intervals = db['processed_intervals']
-        
-        # Convert date objects to datetime objects for MongoDB compatibility
-        start_datetime = datetime.datetime.combine(interval_start, datetime.time.min)
-        end_datetime = datetime.datetime.combine(interval_end, datetime.time.min)
-        
-        # Check if this interval exists in the processed_intervals collection
-        query = {
-            'symbol': symbol,
-            'interval_start': start_datetime,
-            'interval_end': end_datetime
-        }
-        
-        result = processed_intervals.find_one(query)
-        return result is not None
-        
-    except PyMongoError as e:
-        print(f"Error checking processed intervals: {e}")
-        return False
-    finally:
-        if client is not None:
-            client.close()
 
 def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
     """
@@ -86,63 +45,10 @@ def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
         except Exception:
             pass
 
-def record_processed_interval(symbol, interval_start, interval_end, connection_string, db_name, no_data_found=False):
-    """
-    Record a processed interval in MongoDB.
-    
-    Args:
-        symbol (str): Stock symbol
-        interval_start (datetime.date): Start date of the interval
-        interval_end (datetime.date): End date of the interval
-        connection_string (str): MongoDB connection string
-        db_name (str): MongoDB database name
-        no_data_found (bool): Whether this interval was processed but contained no data
-        
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    try:
-        # Connect to MongoDB
-        client = MongoClient(connection_string)
-        db = client[db_name]
-        processed_intervals = db['processed_intervals']
-        
-        # Convert date objects to datetime objects for MongoDB compatibility
-        start_datetime = datetime.datetime.combine(interval_start, datetime.time.min)
-        end_datetime = datetime.datetime.combine(interval_end, datetime.time.min)
-        
-        # Prepare document
-        document = {
-            'symbol': symbol,
-            'interval_start': start_datetime,
-            'interval_end': end_datetime,
-            'processed_at': datetime.datetime.now(),
-            'no_data_found': bool(no_data_found)
-        }
-        
-        # Insert the document
-        processed_intervals.insert_one(document)
-        return True
-        
-    except PyMongoError as e:
-        print(f"Error recording processed interval: {e}")
-        return False
-    finally:
-        if 'client' in locals():
-            client.close()
 
 def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10):
     """
     Fetch stock symbols from the 'stock' collection in MongoDB, sorted by marketCap.
-
-    Args:
-        connection_string (str): MongoDB connection string.
-        db_name (str): MongoDB database name.
-        batch_number (int): The batch number to fetch (e.g., 1 for the first 50, 2 for the next 50).
-        batch_size (int): The number of stocks in each batch.
-
-    Returns:
-        list: A list of stock symbols.
     """
     client = None
     try:
@@ -170,14 +76,11 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10)
 
 def main():
     # Define the dynamic date range for daily cron run
-    # Start date: 3 days before current date
-    # End date: current date
-    # end_date = datetime.date.today()
-    # start_date = end_date - datetime.timedelta(days=3)
-
-    start_date = datetime.date(2025, 9, 20) #September 1st, 2025
-    # end_date = datetime.date(2025, 9, 30) #September 17th, 2025
+    # Start date: yesterday
+    # End date: today
     end_date = datetime.date.today()
+    start_date = end_date - datetime.timedelta(days=1)
+
     # MongoDB connection settings via environment variables
     # Provide sensible defaults for local development
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
@@ -193,9 +96,8 @@ def main():
 
     # Batching and throttling configuration via environment variables
     batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "10"))
-    # max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "1")  # default 1 for local testing
-    # max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
-    max_batches = int(os.getenv("FINHISAAB_MAX_BATCHES", "20"))
+    max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "")
+    max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
 
     # Optional throttling controls
     symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "1"))
@@ -203,7 +105,7 @@ def main():
     batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
     batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
 
-    batch_number = 41
+    batch_number = 1
     processed_batches = 0
 
     while True:
@@ -234,11 +136,6 @@ def main():
         for i, symbol in enumerate(symbols_to_process):
             print(f"\nProcessing symbol: {symbol} for range {start_date} to {end_date}")
 
-            # Skip if already processed for this full range
-            if is_interval_processed(symbol, start_date, end_date, connection_string, db_name):
-                print(f"Already processed for this date range. Skipping {symbol}...")
-                continue
-
             # Resolve the DataFrame for this symbol
             try:
                 symbol_df = None
@@ -261,18 +158,6 @@ def main():
 
                 if symbol_df is None or symbol_df.empty:
                     print(f"No data found for {symbol} in this range.")
-                    record_result = record_processed_interval(
-                        symbol,
-                        start_date,
-                        end_date,
-                        connection_string,
-                        db_name,
-                        no_data_found=True
-                    )
-                    if record_result:
-                        print(f"Recorded as processed (no data) for {symbol}")
-                    else:
-                        print(f"Failed to record as processed (no data) for {symbol}")
                     continue
                 else:
                     print(f"Retrieved {len(symbol_df)} records for {symbol}")
@@ -291,21 +176,6 @@ def main():
             )
             print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
             print(f"Message: {message}")
-
-            # Record as processed for this entire range
-            if success:
-                record_result = record_processed_interval(
-                    symbol,
-                    start_date,
-                    end_date,
-                    connection_string,
-                    db_name,
-                    no_data_found=False
-                )
-                if record_result:
-                    print(f"Recorded as processed for {symbol}")
-                else:
-                    print(f"Failed to record as processed for {symbol}")
 
             # Delay between symbols to avoid overload
             if i < len(symbols_to_process) - 1:
