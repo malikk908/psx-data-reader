@@ -121,61 +121,39 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
         
         dividends, bonuses = process_announcements(df)
         
-        div_upserted = 0
-        div_modified = 0
-        bonus_upserted = 0
-        bonus_modified = 0
+        div_inserted = 0
+        bonus_inserted = 0
 
         # Bulk write dividends
         if dividends:
             div_ops = []
             for doc in dividends:
-                update_doc = {
-                    "$set": {k: v for k, v in doc.items() if k != "createdAt"},
-                    "$setOnInsert": {"createdAt": doc["createdAt"]}
-                }
-                div_ops.append(
-                    pymongo.UpdateOne(
-                        {"symbol": doc["symbol"], "exDate": doc["exDate"]},
-                        update_doc,
-                        upsert=True
-                    )
-                )
+                div_ops.append(pymongo.InsertOne(doc))
+            
             if div_ops:
-                res = db[dividend_collection_name].bulk_write(div_ops)
-                div_upserted = res.upserted_count
-                div_modified = res.modified_count
+                try:
+                    res = db[dividend_collection_name].bulk_write(div_ops, ordered=False)
+                    div_inserted = res.inserted_count
+                except pymongo.errors.BulkWriteError as bwe:
+                    # Ignore duplicate key errors, count successful inserts
+                    div_inserted = bwe.details['nInserted']
 
         # Bulk write bonuses
         if bonuses:
-            # Note: the schema doesn't specify unique index for bonus symbol+exDate natively,
-            # but idempotency requires we avoid duplicate announcements on same date.
             bonus_ops = []
             for doc in bonuses:
-                update_doc = {
-                    "$set": {k: v for k, v in doc.items() if k != "createdAt"},
-                    "$setOnInsert": {"createdAt": doc["createdAt"]}
-                }
-                bonus_ops.append(
-                    pymongo.UpdateOne(
-                        {
-                            "symbol": doc["symbol"], 
-                            "exDate": doc["exDate"], 
-                            "bonusType": doc["bonusType"],
-                            "bonusPercentage": doc["bonusPercentage"]
-                        },
-                        update_doc,
-                        upsert=True
-                    )
-                )
+                bonus_ops.append(pymongo.InsertOne(doc))
+                
             if bonus_ops:
-                res = db[bonus_collection_name].bulk_write(bonus_ops)
-                bonus_upserted = res.upserted_count
-                bonus_modified = res.modified_count
+                try:
+                    res = db[bonus_collection_name].bulk_write(bonus_ops, ordered=False)
+                    bonus_inserted = res.inserted_count
+                except pymongo.errors.BulkWriteError as bwe:
+                    bonus_inserted = bwe.details['nInserted']
 
         msg = (f"Processed successful. "
-               f"Dividends: {div_upserted} new, {div_modified} updated; "
-               f"Bonuses: {bonus_upserted} new, {bonus_modified} updated.")
+               f"Dividends: {div_inserted} inserted; "
+               f"Bonuses: {bonus_inserted} inserted (duplicates skipped).")
         logger.info(msg)
         return True, msg
 
