@@ -61,9 +61,10 @@ def main():
 
     # MongoDB connection settings via environment variables
     # Provide sensible defaults for local development
-    connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
-    db_name = os.getenv("FINHISAAB_DB_NAME", "finhisaab")
-    collection_name = os.getenv("FINHISAAB_DIVIDEND_COLLECTION", "dividend_announcements")
+    connection_string = os.getenv("FINHISAAB_PRIMARY_DB_MONGO_URI", "mongodb://192.168.0.131:27017/")
+    db_name = os.getenv("FINHISAAB_PRIMARY_DB_NAME", "finhisaab")
+    dividend_collection_name = os.getenv("FINHISAAB_DIVIDEND_COLLECTION", "dividendannouncements")
+    bonus_collection_name = os.getenv("FINHISAAB_BONUS_COLLECTION", "bonusannouncements")
 
     # Early connectivity test to fail fast if DB is unreachable
     if not test_mongo_connectivity(connection_string, db_name):
@@ -119,7 +120,8 @@ def main():
     print("STEP 2: SAVING TO MONGODB")
     print("=" * 80)
     print(f"Database: {db_name}")
-    print(f"Collection: {collection_name}")
+    print(f"Dividend Collection: {dividend_collection_name}")
+    print(f"Bonus Collection: {bonus_collection_name}")
     print(f"Saving {len(announcements)} announcements...")
 
     try:
@@ -127,7 +129,8 @@ def main():
             df=announcements,
             connection_string=connection_string,
             db_name=db_name,
-            collection_name=collection_name
+            dividend_collection_name=dividend_collection_name,
+            bonus_collection_name=bonus_collection_name
         )
 
         print(f"\nResult: {'✓ Success' if success else '✗ Failed'}")
@@ -152,15 +155,13 @@ def main():
         stats = get_collection_stats(
             connection_string=connection_string,
             db_name=db_name,
-            collection_name=collection_name
+            dividend_collection_name=dividend_collection_name,
+            bonus_collection_name=bonus_collection_name
         )
 
-        print(f"\nTotal announcements in database: {stats.get('total_announcements', 'N/A')}")
-        print(f"Date range: {stats.get('earliest_x_date', 'N/A')} to {stats.get('latest_x_date', 'N/A')}")
-        print(f"\nBy type:")
-        print(f"  Dividend: {stats.get('dividend_announcements', 'N/A')}")
-        print(f"  Bonus: {stats.get('bonus_announcements', 'N/A')}")
-        print(f"  Rights: {stats.get('rights_announcements', 'N/A')}")
+        print(f"\nDividends in database: {stats.get('dividends_count', 'N/A')}")
+        print(f"Bonuses in database: {stats.get('bonuses_count', 'N/A')}")
+        print(f"Dividend date range: {stats.get('dividend_earliest_exdate', 'N/A')} to {stats.get('dividend_latest_exdate', 'N/A')}")
 
     except Exception as e:
         print(f"Failed to get collection stats: {e}")
