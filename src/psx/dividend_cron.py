@@ -176,3 +176,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# source .venv/bin/activate
+# python src/psx/dividend_cron.py
