@@ -46,7 +46,7 @@ def create_indexes(db, dividend_collection_name, bonus_collection_name):
         logger.warning(f"Index creation warning (may already exist): {str(e)}")
 
 
-def process_announcements(announcements_df):
+def process_announcements(announcements_df, face_values):
     if announcements_df.empty:
         return [], []
 
@@ -73,11 +73,14 @@ def process_announcements(announcements_df):
         # Process Dividend
         if "dividend" in row.get('announcement_type', []):
             try:
-                amount = float(row.get('dividend', 0))
-                if amount > 0:
+                percent_amount = float(row.get('dividend', 0))
+                if percent_amount > 0:
+                    face_value = face_values.get(symbol, 10.0) # default face value is 10.0
+                    actual_amount = (percent_amount * face_value) / 100.0
+                    
                     dividends.append({
                         "symbol": symbol,
-                        "amountPerShare": amount,
+                        "amountPerShare": actual_amount,
                         "exDate": x_date,
                         "payDate": x_date, # PSX only gives xDate, use it for required payDate
                         "status": "ANNOUNCED",
@@ -119,7 +122,19 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
         db = connect_to_mongodb(connection_string, db_name)
         create_indexes(db, dividend_collection_name, bonus_collection_name)
         
-        dividends, bonuses = process_announcements(df)
+        # Fetch all stocks to get their faceValue
+        stocks_collection = db['stocks']
+        stocks_cursor = stocks_collection.find({}, {'symbol': 1, 'faceValue': 1, '_id': 0})
+        
+        face_values = {}
+        for stock in stocks_cursor:
+            sym = stock.get('symbol')
+            if sym:
+                # If faceValue is None, default to 10
+                fv = stock.get('faceValue')
+                face_values[sym] = float(fv) if fv is not None else 10.0
+                
+        dividends, bonuses = process_announcements(df, face_values)
         
         div_inserted = 0
         bonus_inserted = 0
