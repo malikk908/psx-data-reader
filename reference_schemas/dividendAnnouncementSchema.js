@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const dividendAnnouncementSchema = new mongoose.Schema({
   symbol: { type: String, required: true },
   amountPerShare: { type: Number, required: true },
+  faceValue: { type: Number },
   exDate: { type: Date, required: true },
   recordDate: { type: Date },
   payDate: { type: Date, required: true },

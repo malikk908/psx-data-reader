@@ -81,6 +81,7 @@ def process_announcements(announcements_df, face_values):
                     dividends.append({
                         "symbol": symbol,
                         "amountPerShare": actual_amount,
+                        "faceValue": face_value,
                         "exDate": x_date,
                         "payDate": x_date, # PSX only gives xDate, use it for required payDate
                         "status": "ANNOUNCED",
