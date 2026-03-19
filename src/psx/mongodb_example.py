@@ -19,48 +19,6 @@ try:
 except Exception:
     pass
 
-def is_interval_processed(symbol, interval_start, interval_end, connection_string, db_name):
-    """
-    Check if a specific interval for a stock has already been processed and stored in MongoDB.
-    
-    Args:
-        symbol (str): Stock symbol
-        interval_start (datetime.date): Start date of the interval
-        interval_end (datetime.date): End date of the interval
-        connection_string (str): MongoDB connection string
-        db_name (str): MongoDB database name
-        
-    Returns:
-        bool: True if the interval has been processed, False otherwise
-    """
-    client = None
-    try:
-        # Connect to MongoDB
-        client = MongoClient(connection_string)
-        db = client[db_name]
-        processed_intervals = db['processed_intervals']
-        
-        # Convert date objects to datetime objects for MongoDB compatibility
-        start_datetime = datetime.datetime.combine(interval_start, datetime.time.min)
-        end_datetime = datetime.datetime.combine(interval_end, datetime.time.min)
-        
-        # Check if this interval exists in the processed_intervals collection
-        query = {
-            'symbol': symbol,
-            'interval_start': start_datetime,
-            'interval_end': end_datetime
-        }
-        
-        result = processed_intervals.find_one(query)
-        return result is not None
-        
-    except PyMongoError as e:
-        print(f"Error checking processed intervals: {e}")
-        return False
-    finally:
-        if client is not None:
-            client.close()
-
 def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
     """
     Perform a quick connectivity test to MongoDB.
@@ -86,9 +44,9 @@ def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
         except Exception:
             pass
 
-def record_processed_interval(symbol, interval_start, interval_end, connection_string, db_name, no_data_found=False):
+def record_failed_interval(symbol, interval_start, interval_end, connection_string, db_name, reason):
     """
-    Record a processed interval in MongoDB.
+    Record a failed data fetch interval in MongoDB for manual review later.
     
     Args:
         symbol (str): Stock symbol
@@ -96,7 +54,7 @@ def record_processed_interval(symbol, interval_start, interval_end, connection_s
         interval_end (datetime.date): End date of the interval
         connection_string (str): MongoDB connection string
         db_name (str): MongoDB database name
-        no_data_found (bool): Whether this interval was processed but contained no data
+        reason (str): Reason for failure
         
     Returns:
         bool: True if successful, False otherwise
@@ -105,7 +63,7 @@ def record_processed_interval(symbol, interval_start, interval_end, connection_s
         # Connect to MongoDB
         client = MongoClient(connection_string)
         db = client[db_name]
-        processed_intervals = db['processed_intervals']
+        failed_intervals = db['failed_intervals']
         
         # Convert date objects to datetime objects for MongoDB compatibility
         start_datetime = datetime.datetime.combine(interval_start, datetime.time.min)
@@ -116,16 +74,16 @@ def record_processed_interval(symbol, interval_start, interval_end, connection_s
             'symbol': symbol,
             'interval_start': start_datetime,
             'interval_end': end_datetime,
-            'processed_at': datetime.datetime.now(),
-            'no_data_found': bool(no_data_found)
+            'failed_at': datetime.datetime.now(),
+            'reason': reason
         }
         
         # Insert the document
-        processed_intervals.insert_one(document)
+        failed_intervals.insert_one(document)
         return True
         
     except PyMongoError as e:
-        print(f"Error recording processed interval: {e}")
+        print(f"Error recording failed interval: {e}")
         return False
     finally:
         if 'client' in locals():
@@ -192,10 +150,9 @@ def main():
     # --- Fetch stock symbols from MongoDB in batches and process ---
 
     # Batching and throttling configuration via environment variables
-    batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "10"))
-    # max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "1")  # default 1 for local testing
-    # max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
-    max_batches = int(os.getenv("FINHISAAB_MAX_BATCHES", "20"))
+    batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "20"))
+    max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "")
+    max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
 
     # Optional throttling controls
     symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "1"))
@@ -203,7 +160,7 @@ def main():
     batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
     batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
 
-    batch_number = 41
+    batch_number = 1
     processed_batches = 0
 
     while True:
@@ -234,11 +191,6 @@ def main():
         for i, symbol in enumerate(symbols_to_process):
             print(f"\nProcessing symbol: {symbol} for range {start_date} to {end_date}")
 
-            # Skip if already processed for this full range
-            if is_interval_processed(symbol, start_date, end_date, connection_string, db_name):
-                print(f"Already processed for this date range. Skipping {symbol}...")
-                continue
-
             # Resolve the DataFrame for this symbol
             try:
                 symbol_df = None
@@ -256,28 +208,32 @@ def main():
                 
                 # Fallback to single-symbol fetch if needed
                 if symbol_df is None:
-                    print("Fetching individually for symbol due to unavailable batch data slice...")
+                    print(f"Fetching individually for symbol {symbol} due to unavailable batch data slice...")
                     symbol_df = stocks(symbol, start=start_date, end=end_date)
 
                 if symbol_df is None or symbol_df.empty:
-                    print(f"No data found for {symbol} in this range.")
-                    record_result = record_processed_interval(
+                    print(f"No data found for {symbol} in this range. Recording failure.")
+                    record_failed_interval(
                         symbol,
                         start_date,
                         end_date,
                         connection_string,
                         db_name,
-                        no_data_found=True
+                        reason="No data found or empty dataframe returned"
                     )
-                    if record_result:
-                        print(f"Recorded as processed (no data) for {symbol}")
-                    else:
-                        print(f"Failed to record as processed (no data) for {symbol}")
                     continue
                 else:
                     print(f"Retrieved {len(symbol_df)} records for {symbol}")
             except Exception as e:
                 print(f"An error occurred while fetching data for {symbol}: {e}")
+                record_failed_interval(
+                    symbol,
+                    start_date,
+                    end_date,
+                    connection_string,
+                    db_name,
+                    reason=f"Exception during fetch: {str(e)}"
+                )
                 continue
 
             # Save data to MongoDB
@@ -292,20 +248,15 @@ def main():
             print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
             print(f"Message: {message}")
 
-            # Record as processed for this entire range
-            if success:
-                record_result = record_processed_interval(
+            if not success:
+                record_failed_interval(
                     symbol,
                     start_date,
                     end_date,
                     connection_string,
                     db_name,
-                    no_data_found=False
+                    reason=f"Failed to save to MongoDB: {message}"
                 )
-                if record_result:
-                    print(f"Recorded as processed for {symbol}")
-                else:
-                    print(f"Failed to record as processed for {symbol}")
 
             # Delay between symbols to avoid overload
             if i < len(symbols_to_process) - 1:
