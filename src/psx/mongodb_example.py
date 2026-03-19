@@ -113,23 +113,153 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10)
         client = MongoClient(connection_string)
         db = client[db_name]
         stocks_collection = db['stocks']
-        
+
         # Calculate the number of documents to skip
         skip_amount = (batch_number - 1) * batch_size
-        
+
         # Fetch symbols, sorted by marketCap descending
         symbols = stocks_collection.find({}, {'symbol': 1, '_id': 0}) \
                                    .sort('marketCap', -1) \
                                    .skip(skip_amount) \
                                    .limit(batch_size)
-        
+
         return [s['symbol'] for s in symbols]
-    
+
     except PyMongoError as e:
         print(f"Error fetching stock symbols: {e}")
         return []
     finally:
         if 'client' in locals():
+            client.close()
+
+def check_symbols_data_coverage(
+    symbols,
+    start_date,
+    end_date,
+    connection_string,
+    db_name,
+    collection_name,
+    tolerance_days=5
+):
+    """
+    Check which symbols have sufficient data coverage in MongoDB for a date range.
+    Uses a single aggregation query for all symbols (batch optimized).
+
+    Args:
+        symbols (list): List of stock symbols to check.
+        start_date (datetime.date): Start date of the range to check.
+        end_date (datetime.date): End date of the range to check.
+        connection_string (str): MongoDB connection string.
+        db_name (str): Database name.
+        collection_name (str): Collection name.
+        tolerance_days (int): Number of days margin before/after range (default: 5).
+
+    Returns:
+        dict: Dictionary with coverage info per symbol:
+            {
+                'SYMBOL': {
+                    'has_coverage': bool,
+                    'record_count': int,
+                    'first_date': datetime.date or None,
+                    'last_date': datetime.date or None,
+                    'should_skip': bool
+                }
+            }
+    """
+    if not symbols:
+        return {}
+
+    client = None
+    try:
+        client = MongoClient(connection_string)
+        db = client[db_name]
+        collection = db[collection_name]
+
+        # Expand date range with tolerance margin
+        start_dt_with_margin = datetime.datetime.combine(
+            start_date - datetime.timedelta(days=tolerance_days),
+            datetime.time.min
+        )
+        end_dt_with_margin = datetime.datetime.combine(
+            end_date + datetime.timedelta(days=tolerance_days),
+            datetime.time.max
+        )
+
+        # Single aggregation query for all symbols
+        pipeline = [
+            {
+                '$match': {
+                    'symbol': {'$in': symbols},
+                    'date': {'$gte': start_dt_with_margin, '$lte': end_dt_with_margin}
+                }
+            },
+            {
+                '$group': {
+                    '_id': '$symbol',
+                    'count': {'$sum': 1},
+                    'first_date': {'$min': '$date'},
+                    'last_date': {'$max': '$date'}
+                }
+            }
+        ]
+
+        results = collection.aggregate(pipeline)
+
+        # Calculate minimum expected records
+        total_days = (end_date - start_date).days + 1
+        min_expected_records = max(1, int(total_days * 0.5))
+
+        # Build coverage info for symbols with data
+        coverage_info = {}
+        symbols_with_data = set()
+
+        for result in results:
+            symbol = result['_id']
+            first_date = result['first_date'].date() if result['first_date'] else None
+            last_date = result['last_date'].date() if result['last_date'] else None
+            count = result['count']
+
+            # Determine coverage
+            has_start_coverage = first_date <= start_date if first_date else False
+            has_end_coverage = last_date >= end_date if last_date else False
+            has_sufficient_records = count >= min_expected_records
+
+            has_coverage = has_start_coverage and has_end_coverage and has_sufficient_records
+
+            coverage_info[symbol] = {
+                'has_coverage': has_coverage,
+                'record_count': count,
+                'first_date': first_date,
+                'last_date': last_date,
+                'should_skip': has_coverage
+            }
+            symbols_with_data.add(symbol)
+
+        # Add symbols with NO data
+        for symbol in symbols:
+            if symbol not in symbols_with_data:
+                coverage_info[symbol] = {
+                    'has_coverage': False,
+                    'record_count': 0,
+                    'first_date': None,
+                    'last_date': None,
+                    'should_skip': False
+                }
+
+        return coverage_info
+
+    except PyMongoError as e:
+        print(f"Error checking data coverage: {e}")
+        # Fail open: return no coverage for all symbols (fetch everything)
+        return {symbol: {
+            'has_coverage': False,
+            'record_count': 0,
+            'first_date': None,
+            'last_date': None,
+            'should_skip': False
+        } for symbol in symbols}
+    finally:
+        if client:
             client.close()
 
 def main():
@@ -163,6 +293,11 @@ def main():
     batch_number = 1
     processed_batches = 0
 
+    # Performance tracking
+    total_symbols_processed = 0
+    total_symbols_skipped = 0
+    total_symbols_fetched = 0
+
     try:
         while True:
             print(f"\n{'='*50}")
@@ -180,16 +315,62 @@ def main():
 
             print(f"Found {len(symbols_to_process)} symbols to process in batch #{batch_number}.")
 
+            # Check data coverage for batch optimization
+            print(f"Checking data coverage for {len(symbols_to_process)} symbols...")
+            coverage_info = check_symbols_data_coverage(
+                symbols=symbols_to_process,
+                start_date=start_date,
+                end_date=end_date,
+                connection_string=connection_string,
+                db_name=db_name,
+                collection_name=collection_name,
+                tolerance_days=5
+            )
+
+            # Filter symbols: separate those with coverage from those needing fetch
+            symbols_with_coverage = [s for s in symbols_to_process
+                                     if coverage_info[s]['should_skip']]
+            symbols_to_fetch = [s for s in symbols_to_process
+                                if not coverage_info[s]['should_skip']]
+
+            # Update performance counters
+            total_symbols_processed += len(symbols_to_process)
+            total_symbols_skipped += len(symbols_with_coverage)
+            total_symbols_fetched += len(symbols_to_fetch)
+
+            # Log skipped symbols
+            if symbols_with_coverage:
+                print(f"✓ Skipping {len(symbols_with_coverage)} symbols with sufficient coverage:")
+                for symbol in symbols_with_coverage:
+                    info = coverage_info[symbol]
+                    print(f"  - {symbol}: {info['record_count']} records "
+                          f"({info['first_date']} to {info['last_date']})")
+
+            # If all symbols have coverage, skip to next batch
+            if not symbols_to_fetch:
+                print("All symbols in this batch have sufficient coverage. Moving to next batch.")
+                batch_delay = random.uniform(batch_delay_min, batch_delay_max)
+                print(f"Waiting {batch_delay:.2f} seconds before next batch...")
+                time.sleep(batch_delay)
+                batch_number += 1
+                processed_batches += 1
+                if max_batches is not None and processed_batches >= max_batches:
+                    print(f"Reached FINHISAAB_MAX_BATCHES={max_batches}. Stopping.")
+                    break
+                continue
+
+            print(f"Will fetch data for {len(symbols_to_fetch)} symbols: {symbols_to_fetch}")
+
             # Try to fetch data for the whole batch in a single call
             batch_data = None
             try:
-                print(f"Attempting batch fetch for symbols: {symbols_to_process}")
-                batch_data = stocks(symbols_to_process, start=start_date, end=end_date)
+                print(f"Attempting batch fetch for symbols: {symbols_to_fetch}")
+                batch_data = stocks(symbols_to_fetch, start=start_date, end=end_date)
             except Exception as e:
                 print(f"Batch fetch failed; will fallback to per-symbol fetch. Error: {e}")
                 batch_data = None
 
-            for i, symbol in enumerate(symbols_to_process):
+            for i, symbol in enumerate(symbols_to_fetch):
                 print(f"\nProcessing symbol: {symbol} for range {start_date} to {end_date}")
 
                 # Resolve the DataFrame for this symbol
@@ -260,7 +441,7 @@ def main():
                     )
 
                 # Delay between symbols to avoid overload
-                if i < len(symbols_to_process) - 1:
+                if i < len(symbols_to_fetch) - 1:
                     delay = random.uniform(symbol_delay_min, symbol_delay_max)
                     print(f"Waiting {delay:.2f} seconds before next symbol...")
                     time.sleep(delay)
@@ -279,6 +460,14 @@ def main():
                 break
 
         print(f"\n{'='*50}")
+        print("PERFORMANCE REPORT:")
+        print(f"  Total symbols processed: {total_symbols_processed}")
+        print(f"  Symbols skipped (coverage): {total_symbols_skipped}")
+        print(f"  Symbols fetched: {total_symbols_fetched}")
+        if total_symbols_processed > 0:
+            skip_rate = (total_symbols_skipped / total_symbols_processed) * 100
+            print(f"  Skip rate: {skip_rate:.1f}%")
+        print(f"{'='*50}\n")
         print("All batches processed for the current run.")
 
     except (Exception, KeyboardInterrupt) as e:
