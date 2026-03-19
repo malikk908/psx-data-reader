@@ -36,31 +36,28 @@ def connect_to_mongodb(connection_string="mongodb://localhost:27017/", db_name="
 def dataframe_to_documents(df, symbol):
     """
     Convert a pandas DataFrame to a list of MongoDB documents
-    
+
     Args:
         df (pandas.DataFrame): DataFrame containing stock data
         symbol (str): Stock symbol
-        
+
     Returns:
         list: List of dictionaries in MongoDB document format
     """
     if df.empty:
         logger.warning(f"Empty DataFrame provided for symbol {symbol}")
         return []
-    
+
     # Reset index to make the Date column accessible
     df_reset = df.reset_index()
-    
-    # Current timestamp for created_at and updated_at fields
-    current_time = datetime.now()
-    
+
     documents = []
     for _, row in df_reset.iterrows():
         # Convert pandas Timestamp to datetime if needed
         date = row['Date']
         if hasattr(date, 'to_pydatetime'):
             date = date.to_pydatetime()
-        
+
         document = {
             "symbol": symbol,
             "date": date,
@@ -71,22 +68,23 @@ def dataframe_to_documents(df, symbol):
             "volume": float(row['Volume'])
         }
         documents.append(document)
-    
+
     logger.info(f"Converted {len(documents)} rows of data for symbol {symbol}")
     return documents
 
-def save_to_mongodb(df, symbol, connection_string="mongodb://localhost:27017/", 
+def save_to_mongodb(df, symbol, connection_string="mongodb://localhost:27017/",
                    db_name="finhisaab", collection_name="psxstockpricedata"):
     """
-    Save stock data to MongoDB
-    
+    Save stock data to MongoDB using insert-only strategy.
+    Duplicates (same symbol + date) are silently ignored due to unique index.
+
     Args:
         df (pandas.DataFrame): DataFrame containing stock data
         symbol (str): Stock symbol
         connection_string (str): MongoDB connection string
         db_name (str): Name of the database
         collection_name (str): Name of the collection
-        
+
     Returns:
         tuple: (success, message) where success is a boolean and message is a string
     """
@@ -94,36 +92,50 @@ def save_to_mongodb(df, symbol, connection_string="mongodb://localhost:27017/",
         # Connect to MongoDB
         db = connect_to_mongodb(connection_string, db_name)
         collection = db[collection_name]
-        
+
         # Convert DataFrame to documents
         documents = dataframe_to_documents(df, symbol)
-        
+
         if not documents:
             return False, "No documents to insert"
-        
-        # Create a unique index on symbol and date to avoid duplicates
-        # collection.create_index([("symbol", pymongo.ASCENDING), ("date", pymongo.ASCENDING)], unique=True)
-        
-        # Use bulk operations for better performance
-        operations = []
+
+        # Create a unique index on symbol and date to prevent duplicates
+        collection.create_index(
+            [("symbol", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
+            unique=True
+        )
+
+        # Add timestamps to all documents
+        current_time = datetime.now()
         for doc in documents:
-            # Upsert operation: insert if not exists, update if exists
-            operations.append(
-                pymongo.UpdateOne(
-                    {"symbol": doc["symbol"], "date": doc["date"]},
-                    {"$set": doc},
-                    upsert=True
-                )
-            )
-        
-        # Execute bulk operations
-        result = collection.bulk_write(operations)
-        
-        logger.info(f"MongoDB operation completed: {result.upserted_count} inserted, "
-                   f"{result.modified_count} updated")
-        
-        return True, f"Successfully processed {len(documents)} documents for {symbol}"
-    
+            doc["createdAt"] = current_time
+            doc["updatedAt"] = current_time
+
+        # Use bulk insert with ordered=False to continue on duplicate key errors
+        operations = [pymongo.InsertOne(doc) for doc in documents]
+
+        try:
+            result = collection.bulk_write(operations, ordered=False)
+            inserted_count = result.inserted_count
+        except pymongo.errors.BulkWriteError as bwe:
+            # Extract successful inserts from the error
+            inserted_count = bwe.details.get('nInserted', 0)
+            # Silently ignore duplicate key errors (error code 11000)
+            write_errors = bwe.details.get('writeErrors', [])
+            duplicate_errors = [e for e in write_errors if e.get('code') == 11000]
+            other_errors = [e for e in write_errors if e.get('code') != 11000]
+
+            if other_errors:
+                # Log non-duplicate errors
+                logger.warning(f"Non-duplicate errors during insert: {other_errors}")
+
+            logger.info(f"MongoDB insert completed: {inserted_count} inserted, "
+                       f"{len(duplicate_errors)} duplicates skipped")
+
+        logger.info(f"MongoDB operation completed: {inserted_count} inserted")
+
+        return True, f"Successfully processed {len(documents)} documents for {symbol} ({inserted_count} new, {len(documents) - inserted_count} duplicates skipped)"
+
     except Exception as e:
         error_msg = f"Error saving data to MongoDB: {str(e)}"
         logger.error(error_msg)
