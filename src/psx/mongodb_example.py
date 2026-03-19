@@ -134,8 +134,8 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10)
 
 def main():
     # Define the dynamic date range for daily cron run
-    start_date = datetime.date(2025, 9, 20) #September 1st, 2025
-    end_date = datetime.date.today()
+    start_date = datetime.date(2015, 7, 1) #July 1st, 2015
+    end_date = datetime.date(2015, 12, 31) # December 31st, 2015
     
     # MongoDB connection settings via environment variables
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
