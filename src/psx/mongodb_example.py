@@ -264,8 +264,8 @@ def check_symbols_data_coverage(
 
 def main():
     # Define the dynamic date range for daily cron run
-    start_date = datetime.date(2015, 7, 1) #July 1st, 2015
-    end_date = datetime.date(2015, 12, 31) # December 31st, 2015
+    start_date = datetime.date(2015, 1, 1) #January 1st, 2015
+    end_date = datetime.date(2015, 6, 30) # June 30th, 2015
     
     # MongoDB connection settings via environment variables
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
@@ -290,7 +290,7 @@ def main():
     batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
     batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
 
-    batch_number = 1
+    batch_number = 20
     processed_batches = 0
 
     # Performance tracking
