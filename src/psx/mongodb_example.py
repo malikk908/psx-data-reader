@@ -10,7 +10,7 @@ import random
 import pandas as pd
 import os
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, DuplicateKeyError
 
 # Load environment variables from a .env file if python-dotenv is available
 try:
@@ -71,24 +71,21 @@ def record_failed_interval(symbol, interval_start, interval_end, connection_stri
         end_datetime = datetime.datetime.combine(interval_end, datetime.time.min)
         now = datetime.datetime.now()
         
-        query = {
+        document = {
             'symbol': symbol,
             'interval_start': start_datetime,
-            'interval_end': end_datetime
+            'interval_end': end_datetime,
+            'reason': reason,
+            'createdAt': now,
+            'updatedAt': now
         }
         
-        update_doc = {
-            '$set': {
-                'reason': reason,
-                'updatedAt': now
-            },
-            '$setOnInsert': {
-                'createdAt': now
-            }
-        }
-        
-        # Upsert silently skips duplicate creation and just updates the reason/updatedAt
-        failed_intervals.update_one(query, update_doc, upsert=True)
+        try:
+            failed_intervals.insert_one(document)
+        except DuplicateKeyError:
+            # Silently skip if it already exists due to unique index
+            pass
+            
         return True
         
     except PyMongoError as e:
