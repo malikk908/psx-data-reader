@@ -47,6 +47,7 @@ def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
 def record_failed_interval(symbol, interval_start, interval_end, connection_string, db_name, reason):
     """
     Record a failed data fetch interval in MongoDB for manual review later.
+    Duplicates are skipped/updated silently.
     
     Args:
         symbol (str): Stock symbol
@@ -68,18 +69,26 @@ def record_failed_interval(symbol, interval_start, interval_end, connection_stri
         # Convert date objects to datetime objects for MongoDB compatibility
         start_datetime = datetime.datetime.combine(interval_start, datetime.time.min)
         end_datetime = datetime.datetime.combine(interval_end, datetime.time.min)
+        now = datetime.datetime.now()
         
-        # Prepare document
-        document = {
+        query = {
             'symbol': symbol,
             'interval_start': start_datetime,
-            'interval_end': end_datetime,
-            'failed_at': datetime.datetime.now(),
-            'reason': reason
+            'interval_end': end_datetime
         }
         
-        # Insert the document
-        failed_intervals.insert_one(document)
+        update_doc = {
+            '$set': {
+                'reason': reason,
+                'updatedAt': now
+            },
+            '$setOnInsert': {
+                'createdAt': now
+            }
+        }
+        
+        # Upsert silently skips duplicate creation and just updates the reason/updatedAt
+        failed_intervals.update_one(query, update_doc, upsert=True)
         return True
         
     except PyMongoError as e:
@@ -128,16 +137,10 @@ def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10)
 
 def main():
     # Define the dynamic date range for daily cron run
-    # Start date: 3 days before current date
-    # End date: current date
-    # end_date = datetime.date.today()
-    # start_date = end_date - datetime.timedelta(days=3)
-
     start_date = datetime.date(2025, 9, 20) #September 1st, 2025
-    # end_date = datetime.date(2025, 9, 30) #September 17th, 2025
     end_date = datetime.date.today()
+    
     # MongoDB connection settings via environment variables
-    # Provide sensible defaults for local development
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
     db_name = os.getenv("FINHISAAB_DB_NAME", "finhisaab")
     collection_name = os.getenv("FINHISAAB_COLLECTION", "stockpricehistories")
@@ -163,123 +166,134 @@ def main():
     batch_number = 1
     processed_batches = 0
 
-    while True:
-        print(f"\n{'='*50}")
-        print(f"Fetching batch #{batch_number} of up to {batch_size} symbols...")
-        symbols_to_process = get_stock_symbols(
-            connection_string,
-            db_name,
-            batch_number=batch_number,
-            batch_size=batch_size
-        )
+    try:
+        while True:
+            print(f"\n{'='*50}")
+            print(f"Fetching batch #{batch_number} of up to {batch_size} symbols...")
+            symbols_to_process = get_stock_symbols(
+                connection_string,
+                db_name,
+                batch_number=batch_number,
+                batch_size=batch_size
+            )
 
-        if not symbols_to_process:
-            print("No more stock symbols found or an error occurred. Exiting batch loop.")
-            break
+            if not symbols_to_process:
+                print("No more stock symbols found or an error occurred. Exiting batch loop.")
+                break
 
-        print(f"Found {len(symbols_to_process)} symbols to process in batch #{batch_number}.")
+            print(f"Found {len(symbols_to_process)} symbols to process in batch #{batch_number}.")
 
-        # Try to fetch data for the whole batch in a single call
-        batch_data = None
-        try:
-            print(f"Attempting batch fetch for symbols: {symbols_to_process}")
-            batch_data = stocks(symbols_to_process, start=start_date, end=end_date)
-        except Exception as e:
-            print(f"Batch fetch failed; will fallback to per-symbol fetch. Error: {e}")
+            # Try to fetch data for the whole batch in a single call
             batch_data = None
-
-        for i, symbol in enumerate(symbols_to_process):
-            print(f"\nProcessing symbol: {symbol} for range {start_date} to {end_date}")
-
-            # Resolve the DataFrame for this symbol
             try:
-                symbol_df = None
-                if isinstance(batch_data, dict) and symbol in batch_data:
-                    symbol_df = batch_data[symbol]
-                elif isinstance(batch_data, pd.DataFrame):
-                    # If the batch data is a MultiIndex DataFrame with 'Ticker' level, slice it
-                    try:
-                        df_candidate = batch_data
-                        index_names = list(df_candidate.index.names or [])
-                        if 'Ticker' in index_names:
-                            symbol_df = df_candidate.xs(symbol, level='Ticker')
-                    except Exception:
-                        symbol_df = None
-                
-                # Fallback to single-symbol fetch if needed
-                if symbol_df is None:
-                    print(f"Fetching individually for symbol {symbol} due to unavailable batch data slice...")
-                    symbol_df = stocks(symbol, start=start_date, end=end_date)
+                print(f"Attempting batch fetch for symbols: {symbols_to_process}")
+                batch_data = stocks(symbols_to_process, start=start_date, end=end_date)
+            except Exception as e:
+                print(f"Batch fetch failed; will fallback to per-symbol fetch. Error: {e}")
+                batch_data = None
 
-                if symbol_df is None or symbol_df.empty:
-                    print(f"No data found for {symbol} in this range. Recording failure.")
+            for i, symbol in enumerate(symbols_to_process):
+                print(f"\nProcessing symbol: {symbol} for range {start_date} to {end_date}")
+
+                # Resolve the DataFrame for this symbol
+                try:
+                    symbol_df = None
+                    if isinstance(batch_data, dict) and symbol in batch_data:
+                        symbol_df = batch_data[symbol]
+                    elif isinstance(batch_data, pd.DataFrame):
+                        # If the batch data is a MultiIndex DataFrame with 'Ticker' level, slice it
+                        try:
+                            df_candidate = batch_data
+                            index_names = list(df_candidate.index.names or [])
+                            if 'Ticker' in index_names:
+                                symbol_df = df_candidate.xs(symbol, level='Ticker')
+                        except Exception:
+                            symbol_df = None
+                    
+                    # Fallback to single-symbol fetch if needed
+                    if symbol_df is None:
+                        print(f"Fetching individually for symbol {symbol} due to unavailable batch data slice...")
+                        symbol_df = stocks(symbol, start=start_date, end=end_date)
+
+                    if symbol_df is None or symbol_df.empty:
+                        print(f"No data found for {symbol} in this range. Recording failure.")
+                        record_failed_interval(
+                            symbol,
+                            start_date,
+                            end_date,
+                            connection_string,
+                            db_name,
+                            reason="No data found or empty dataframe returned"
+                        )
+                        continue
+                    else:
+                        print(f"Retrieved {len(symbol_df)} records for {symbol}")
+                except Exception as e:
+                    print(f"An error occurred while fetching data for {symbol}: {e}")
                     record_failed_interval(
                         symbol,
                         start_date,
                         end_date,
                         connection_string,
                         db_name,
-                        reason="No data found or empty dataframe returned"
+                        reason=f"Exception during fetch: {str(e)}"
                     )
                     continue
-                else:
-                    print(f"Retrieved {len(symbol_df)} records for {symbol}")
-            except Exception as e:
-                print(f"An error occurred while fetching data for {symbol}: {e}")
-                record_failed_interval(
-                    symbol,
-                    start_date,
-                    end_date,
-                    connection_string,
-                    db_name,
-                    reason=f"Exception during fetch: {str(e)}"
+
+                # Save data to MongoDB
+                print(f"Saving data to MongoDB ({db_name}.{collection_name}) for {symbol}...")
+                success, message = save_to_mongodb(
+                    df=symbol_df,
+                    symbol=symbol,
+                    connection_string=connection_string,
+                    db_name=db_name,
+                    collection_name=collection_name
                 )
-                continue
+                print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
+                print(f"Message: {message}")
 
-            # Save data to MongoDB
-            print(f"Saving data to MongoDB ({db_name}.{collection_name}) for {symbol}...")
-            success, message = save_to_mongodb(
-                df=symbol_df,
-                symbol=symbol,
-                connection_string=connection_string,
-                db_name=db_name,
-                collection_name=collection_name
-            )
-            print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
-            print(f"Message: {message}")
+                if not success:
+                    record_failed_interval(
+                        symbol,
+                        start_date,
+                        end_date,
+                        connection_string,
+                        db_name,
+                        reason=f"Failed to save to MongoDB: {message}"
+                    )
 
-            if not success:
-                record_failed_interval(
-                    symbol,
-                    start_date,
-                    end_date,
-                    connection_string,
-                    db_name,
-                    reason=f"Failed to save to MongoDB: {message}"
-                )
+                # Delay between symbols to avoid overload
+                if i < len(symbols_to_process) - 1:
+                    delay = random.uniform(symbol_delay_min, symbol_delay_max)
+                    print(f"Waiting {delay:.2f} seconds before next symbol...")
+                    time.sleep(delay)
 
-            # Delay between symbols to avoid overload
-            if i < len(symbols_to_process) - 1:
-                delay = random.uniform(symbol_delay_min, symbol_delay_max)
-                print(f"Waiting {delay:.2f} seconds before next symbol...")
-                time.sleep(delay)
+            # Delay between batches
+            batch_delay = random.uniform(batch_delay_min, batch_delay_max)
+            print(f"\nCompleted batch #{batch_number}. Waiting {batch_delay:.2f} seconds before next batch...")
+            time.sleep(batch_delay)
 
-        # Delay between batches
-        batch_delay = random.uniform(batch_delay_min, batch_delay_max)
-        print(f"\nCompleted batch #{batch_number}. Waiting {batch_delay:.2f} seconds before next batch...")
-        time.sleep(batch_delay)
+            batch_number += 1
+            processed_batches += 1
 
-        batch_number += 1
-        processed_batches += 1
+            # If max_batches is set (e.g., for local testing), stop after processing that many batches
+            if max_batches is not None and processed_batches >= max_batches:
+                print(f"Reached FINHISAAB_MAX_BATCHES={max_batches}. Stopping further batch processing for this run.")
+                break
 
-        # If max_batches is set (e.g., for local testing), stop after processing that many batches
-        if max_batches is not None and processed_batches >= max_batches:
-            print(f"Reached FINHISAAB_MAX_BATCHES={max_batches}. Stopping further batch processing for this run.")
-            break
+        print(f"\n{'='*50}")
+        print("All batches processed for the current run.")
 
-    print(f"\n{'='*50}")
-    print("All batches processed for the current run.")
- 
+    except (Exception, KeyboardInterrupt) as e:
+        print(f"\n{'='*50}")
+        print(f"CRITICAL: Script stopped abruptly due to: {e.__class__.__name__} - {e}")
+        print("--- LAST PROCESSING STATE ---")
+        print(f"Date Range:  {start_date} to {end_date}")
+        print(f"Batch Size:  {batch_size}")
+        print(f"Stopped at Batch Number: {batch_number}")
+        print("You can resume by setting `batch_number` to the stopped batch.")
+        print('='*50)
+
 
 if __name__ == "__main__":
     main()
