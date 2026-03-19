@@ -290,7 +290,7 @@ def main():
     batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
     batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
 
-    batch_number = 20
+    batch_number = 1
     processed_batches = 0
 
     # Performance tracking
