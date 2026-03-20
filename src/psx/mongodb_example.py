@@ -263,9 +263,9 @@ def check_symbols_data_coverage(
             client.close()
 
 def main():
-    # Define the dynamic date range for daily cron run
-    start_date = datetime.date(2017, 1, 1) #January 1st, 2017
-    end_date = datetime.date(2017, 6, 30) # June 30th, 2017
+    # Define the dynamic date range for daily cron run - # TODO
+    start_date = datetime.date(2014, 1, 1) #January 1st, 2014
+    end_date = datetime.date(2014, 6, 30) # June 30th, 2014
     
     # MongoDB connection settings via environment variables
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
