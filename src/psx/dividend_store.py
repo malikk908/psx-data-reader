@@ -137,8 +137,57 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
                 
         dividends, bonuses = process_announcements(df, face_values)
         
+        div_deleted = 0
+        bonus_deleted = 0
         div_inserted = 0
         bonus_inserted = 0
+
+        # Cleanup orphaned future announcements
+        if not df.empty:
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # Cleanup dividends
+            incoming_div_keys = {(d['symbol'], d['exDate']) for d in dividends}
+            future_divs = db[dividend_collection_name].find({
+                "exDate": {"$gte": today_start},
+                "metadata.source": "scstrade"
+            })
+            
+            div_delete_ops = []
+            for doc in future_divs:
+                key = (doc.get('symbol'), doc.get('exDate'))
+                if key not in incoming_div_keys:
+                    div_delete_ops.append(pymongo.DeleteOne({'_id': doc['_id']}))
+                    
+            if div_delete_ops:
+                try:
+                    res = db[dividend_collection_name].bulk_write(div_delete_ops, ordered=False)
+                    div_deleted = res.deleted_count
+                    logger.info(f"Deleted {div_deleted} orphaned future dividends")
+                except Exception as e:
+                    logger.warning(f"Failed to delete orphaned dividends: {e}")
+
+            # Cleanup bonuses
+            incoming_bonus_keys = {(b['symbol'], b['exDate']) for b in bonuses}
+            future_bonuses = db[bonus_collection_name].find({
+                "exDate": {"$gte": today_start},
+                "metadata.source": "scstrade"
+            })
+            
+            bonus_delete_ops = []
+            for doc in future_bonuses:
+                key = (doc.get('symbol'), doc.get('exDate'))
+                if key not in incoming_bonus_keys:
+                    bonus_delete_ops.append(pymongo.DeleteOne({'_id': doc['_id']}))
+                    
+            if bonus_delete_ops:
+                try:
+                    res = db[bonus_collection_name].bulk_write(bonus_delete_ops, ordered=False)
+                    bonus_deleted = res.deleted_count
+                    logger.info(f"Deleted {bonus_deleted} orphaned future bonuses")
+                except Exception as e:
+                    logger.warning(f"Failed to delete orphaned bonuses: {e}")
+
 
         # Bulk write dividends
         if dividends:
@@ -167,9 +216,9 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
                 except pymongo.errors.BulkWriteError as bwe:
                     bonus_inserted = bwe.details['nInserted']
 
-        msg = (f"Processed successful. "
-               f"Dividends: {div_inserted} inserted; "
-               f"Bonuses: {bonus_inserted} inserted (duplicates skipped).")
+        msg = (f"Processed successfully. "
+               f"Dividends: {div_inserted} inserted, {div_deleted} deleted; "
+               f"Bonuses: {bonus_inserted} inserted, {bonus_deleted} deleted (duplicates skipped).")
         logger.info(msg)
         return True, msg
 
