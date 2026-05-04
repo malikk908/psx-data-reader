@@ -107,29 +107,35 @@ def run_audit(json_file_path: str, output_file_path: str):
             skipped_count += 1
             continue
             
-        face_value = face_values.get(symbol, 10.0)
-        expected_amount = round((percentage / 100.0) * face_value, 4)
+        # USER INSTRUCTION: assume face value of 10 for calculation
+        assumed_face_value = 10.0
+        expected_amount = round((percentage / 100.0) * assumed_face_value, 4)
+        
+        actual_db_face_value = face_values.get(symbol)
 
         # Check in DB
-        db_amount = db_lookup.get((symbol, ex_date_iso))
+        db_pair = db_lookup.get((symbol, ex_date_iso))
         
-        if db_amount is None:
+        if db_pair is None:
             missing_in_db.append({
                 "symbol": symbol,
                 "exDate": ex_date_iso,
                 "jsonAmount": expected_amount,
                 "jsonDividendStr": dividend_str,
-                "faceValueUsed": face_value
+                "dbFaceValue": actual_db_face_value
             })
-        elif abs(db_amount - expected_amount) > 0.0001:
-            discrepancies.append({
-                "symbol": symbol,
-                "exDate": ex_date_iso,
-                "dbAmount": db_amount,
-                "jsonAmount": expected_amount,
-                "jsonDividendStr": dividend_str,
-                "faceValueUsed": face_value
-            })
+        else:
+            # db_pair is the amountPerShare from DB
+            db_amount = db_pair
+            if abs(db_amount - expected_amount) > 0.0001:
+                discrepancies.append({
+                    "symbol": symbol,
+                    "exDate": ex_date_iso,
+                    "dbAmount": db_amount,
+                    "jsonAmount": expected_amount,
+                    "jsonDividendStr": dividend_str,
+                    "dbFaceValue": actual_db_face_value
+                })
         
         processed_count += 1
 
