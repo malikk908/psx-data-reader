@@ -143,3 +143,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# source .venv/bin/activate
+# python3 src/psx/audit_historical_dividends.py --start 1 --end 2
