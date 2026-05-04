@@ -83,12 +83,21 @@ def run_audit(json_file_path: str, output_file_path: str):
     processed_count = 0
     skipped_count = 0
 
+    # Identify which symbols to audit (only those with missing faceValue)
+    symbols_to_audit = {s['symbol'] for s in missing_face_value_stocks}
+    logger.info(f"Symbols to audit (missing faceValue): {len(symbols_to_audit)}")
+
     for record in json_records:
         symbol = record.get('company_code') or record.get('_scraped_symbol')
+        
+        # SKIP stocks that HAVE a faceValue in DB
+        if not symbol or symbol not in symbols_to_audit:
+            continue
+
         dividend_str = record.get('bm_dividend', '').strip()
         date_str_raw = record.get('bm_bc_exp', '').strip()
 
-        if not symbol or not date_str_raw or not dividend_str:
+        if not date_str_raw or not dividend_str:
             skipped_count += 1
             continue
 
@@ -101,17 +110,16 @@ def run_audit(json_file_path: str, output_file_path: str):
         ex_date_iso = ex_date_obj.strftime("%Y-%m-%d")
         
         # Parse percentage and calculate amount
-        # Extract numeric part from something like "15%(FY15)"
         percentage = scraper._parse_percentage(dividend_str.split('(')[0])
         if percentage == 0:
             skipped_count += 1
             continue
             
-        # USER INSTRUCTION: assume face value of 10 for calculation
+        # For these stocks, we assume face value of 10.0
         assumed_face_value = 10.0
         expected_amount = round((percentage / 100.0) * assumed_face_value, 4)
         
-        actual_db_face_value = face_values.get(symbol)
+        actual_db_face_value = face_values.get(symbol) # This will be 10.0 per our logic above
 
         # Check in DB
         db_pair = db_lookup.get((symbol, ex_date_iso))
@@ -125,7 +133,6 @@ def run_audit(json_file_path: str, output_file_path: str):
                 "dbFaceValue": actual_db_face_value
             })
         else:
-            # db_pair is the amountPerShare from DB
             db_amount = db_pair
             if abs(db_amount - expected_amount) > 0.0001:
                 discrepancies.append({
