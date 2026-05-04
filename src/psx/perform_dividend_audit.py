@@ -1,0 +1,167 @@
+import os
+import json
+import logging
+from datetime import datetime
+from typing import Dict, List, Any
+from pymongo import MongoClient
+from psx.dividend_scraper import DividendScraper
+
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+def connect_to_db():
+    connection_string = os.getenv("FINHISAAB_PRIMARY_DB_MONGO_URI", "mongodb://192.168.0.131:27017/")
+    db_name = os.getenv("FINHISAAB_PRIMARY_DB_NAME", "finhisaab")
+    client = MongoClient(connection_string)
+    return client[db_name]
+
+def run_audit(json_file_path: str, output_file_path: str):
+    db = connect_to_db()
+    scraper = DividendScraper()
+    
+    # 1. Audit stocks with missing faceValue
+    logger.info("Auditing stocks for missing faceValue...")
+    stocks_collection = db['stocks']
+    all_stocks = list(stocks_collection.find({"isActive": True}, {"symbol": 1, "faceValue": 1, "name": 1}))
+    
+    missing_face_value_stocks = []
+    face_values = {}
+    for stock in all_stocks:
+        sym = stock.get('symbol')
+        fv = stock.get('faceValue')
+        if fv is None:
+            missing_face_value_stocks.append({
+                "symbol": sym,
+                "name": stock.get('name')
+            })
+            face_values[sym] = 10.0
+        else:
+            face_values[sym] = float(fv)
+
+    # 2. Load JSON records
+    logger.info(f"Loading JSON records from {json_file_path}...")
+    if not os.path.exists(json_file_path):
+        logger.error(f"File not found: {json_file_path}")
+        return
+
+    with open(json_file_path, 'r') as f:
+        json_records = json.load(f)
+
+    # 3. Load DB dividend announcements
+    logger.info("Loading dividend announcements from DB...")
+    dividend_collection = db['dividendannouncements']
+    db_dividends = list(dividend_collection.find({}, {"symbol": 1, "exDate": 1, "amountPerShare": 1}))
+    
+    # Organize DB records for quick lookup: { (symbol, date_str): amount }
+    db_lookup = {}
+    for div in db_dividends:
+        sym = div.get('symbol')
+        ex_date = div.get('exDate')
+        if isinstance(ex_date, datetime):
+            date_str = ex_date.strftime("%Y-%m-%d")
+        elif isinstance(ex_date, str):
+            date_str = ex_date[:10] # Assume ISO string
+        else:
+            continue
+            
+        amount = div.get('amountPerShare', 0)
+        db_lookup[(sym, date_str)] = amount
+
+    # 4. Compare
+    logger.info("Comparing records...")
+    missing_in_db = []
+    discrepancies = []
+    processed_count = 0
+    skipped_count = 0
+
+    for record in json_records:
+        symbol = record.get('company_code') or record.get('_scraped_symbol')
+        dividend_str = record.get('bm_dividend', '').strip()
+        date_str_raw = record.get('bm_bc_exp', '').strip()
+
+        if not symbol or not date_str_raw or not dividend_str:
+            skipped_count += 1
+            continue
+
+        # Parse date
+        ex_date_obj = scraper.parse_date(date_str_raw)
+        if not ex_date_obj:
+            skipped_count += 1
+            continue
+        
+        ex_date_iso = ex_date_obj.strftime("%Y-%m-%d")
+        
+        # Parse percentage and calculate amount
+        # Extract numeric part from something like "15%(FY15)"
+        percentage = scraper._parse_percentage(dividend_str.split('(')[0])
+        if percentage == 0:
+            skipped_count += 1
+            continue
+            
+        face_value = face_values.get(symbol, 10.0)
+        expected_amount = round((percentage / 100.0) * face_value, 4)
+
+        # Check in DB
+        db_amount = db_lookup.get((symbol, ex_date_iso))
+        
+        if db_amount is None:
+            missing_in_db.append({
+                "symbol": symbol,
+                "exDate": ex_date_iso,
+                "jsonAmount": expected_amount,
+                "jsonDividendStr": dividend_str,
+                "faceValueUsed": face_value
+            })
+        elif abs(db_amount - expected_amount) > 0.0001:
+            discrepancies.append({
+                "symbol": symbol,
+                "exDate": ex_date_iso,
+                "dbAmount": db_amount,
+                "jsonAmount": expected_amount,
+                "jsonDividendStr": dividend_str,
+                "faceValueUsed": face_value
+            })
+        
+        processed_count += 1
+
+    # 5. Summary and Output
+    report = {
+        "audit_timestamp": datetime.now().isoformat(),
+        "summary": {
+            "total_json_records": len(json_records),
+            "processed_records": processed_count,
+            "skipped_records": skipped_count,
+            "missing_face_value_stocks_count": len(missing_face_value_stocks),
+            "missing_in_db_count": len(missing_in_db),
+            "discrepancies_count": len(discrepancies)
+        },
+        "missing_face_value_stocks": missing_face_value_stocks,
+        "missing_in_db": missing_in_db,
+        "discrepancies": discrepancies
+    }
+
+    logger.info(f"Audit complete. Results: {len(missing_in_db)} missing, {len(discrepancies)} discrepancies.")
+    logger.info(f"Saving report to {output_file_path}...")
+    
+    with open(output_file_path, 'w') as f:
+        json.dump(report, f, indent=2)
+    
+    print(f"Report saved to {output_file_path}")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Run dividend audit")
+    parser.add_argument("--json", type=str, default="historical_dividends_audit.json", help="Source JSON file")
+    parser.add_argument("--out", type=str, default="dividend_audit_report.json", help="Output report file")
+    args = parser.parse_args()
+    
+    run_audit(args.json, args.out)
