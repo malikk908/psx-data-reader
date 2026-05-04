@@ -87,7 +87,7 @@ def main():
 
     # Fetch stocks sorted by marketCap descending
     stocks_cursor = db['stocks'].find(
-        {"status": "ACTIVE"}, 
+        {"isActive": True}, 
         {"symbol": 1, "marketCap": 1, "_id": 0}
     ).sort("marketCap", -1).skip(skip_count).limit(limit_count)
 
