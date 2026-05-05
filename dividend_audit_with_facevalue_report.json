@@ -1,0 +1,1763 @@
+{
+  "audit_timestamp": "2026-05-05T15:29:11.471083",
+  "summary": {
+    "mode": "has_face_value",
+    "total_json_records": 3622,
+    "processed_records": 228,
+    "skipped_records": 167,
+    "audited_stocks_count": 20,
+    "missing_in_db_count": 10,
+    "discrepancies_count": 143,
+    "date_tolerance_days": 32,
+    "amount_tolerance": 1.0
+  },
+  "audited_stocks": [
+    {
+      "symbol": "UBL",
+      "name": null,
+      "faceValue": 5.0
+    },
+    {
+      "symbol": "LUCK",
+      "name": null,
+      "faceValue": 2.0
+    },
+    {
+      "symbol": "BLUEX",
+      "name": null,
+      "faceValue": 1.0
+    },
+    {
+      "symbol": "FNEL",
+      "name": null,
+      "faceValue": 1.0
+    },
+    {
+      "symbol": "THCCL",
+      "name": null,
+      "faceValue": 2.0
+    },
+    {
+      "symbol": "SPEL",
+      "name": null,
+      "faceValue": 5.0
+    },
+    {
+      "symbol": "BNL",
+      "name": null,
+      "faceValue": 1.0
+    },
+    {
+      "symbol": "NATF",
+      "name": null,
+      "faceValue": 5.0
+    },
+    {
+      "symbol": "KML",
+      "name": null,
+      "faceValue": 1.0
+    },
+    {
+      "symbol": "KOHC",
+      "name": null,
+      "faceValue": 2.0
+    },
+    {
+      "symbol": "HUMNL",
+      "name": null,
+      "faceValue": 1.0
+    },
+    {
+      "symbol": "SYS",
+      "name": null,
+      "faceValue": 2.0
+    },
+    {
+      "symbol": "AHCL",
+      "name": null,
+      "faceValue": 1.0
+    },
+    {
+      "symbol": "KTML",
+      "name": null,
+      "faceValue": 2.0
+    },
+    {
+      "symbol": "THALL",
+      "name": null,
+      "faceValue": 5.0
+    },
+    {
+      "symbol": "BECO",
+      "name": null,
+      "faceValue": 1.0
+    },
+    {
+      "symbol": "LCI",
+      "name": null,
+      "faceValue": 2.0
+    },
+    {
+      "symbol": "LSEVL",
+      "name": null,
+      "faceValue": 5.0
+    },
+    {
+      "symbol": "GATI",
+      "name": null,
+      "faceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "name": null,
+      "faceValue": 5.0
+    }
+  ],
+  "missing_in_db": [
+    {
+      "symbol": "AHCL",
+      "exDate": "2024-11-11",
+      "jsonAmount": 0.7,
+      "jsonDividendStr": "70%",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2022-10-20",
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2021-10-20",
+      "jsonAmount": 0.3,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2020-10-20",
+      "jsonAmount": 0.15,
+      "jsonDividendStr": "15%",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2015-10-13",
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "40%(FY15)",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2014-10-16",
+      "jsonAmount": 0.25,
+      "jsonDividendStr": "25%(FY14)",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2013-09-12",
+      "jsonAmount": 0.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2012-09-20",
+      "jsonAmount": 0.2,
+      "jsonDividendStr": "20%(FY12)",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2011-10-13",
+      "jsonAmount": 0.2,
+      "jsonDividendStr": "20% (FY11)",
+      "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "AHCL",
+      "exDate": "2010-09-27",
+      "jsonAmount": 0.3,
+      "jsonDividendStr": "30% (specie dividend 3 shares of FFCL for every 10",
+      "dbFaceValue": 1.0
+    }
+  ],
+  "discrepancies": [
+    {
+      "symbol": "UBL",
+      "exDate": "2025-04-28",
+      "dbExDate": "2025-04-28",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2025-03-11",
+      "dbExDate": "2025-03-11",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2024-11-01",
+      "dbExDate": "2024-11-01",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2024-08-08",
+      "dbExDate": "2024-08-08",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2024-04-25",
+      "dbExDate": "2024-04-25",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2024-03-07",
+      "dbExDate": "2024-03-07",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2023-11-03",
+      "dbExDate": "2023-11-03",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2023-07-27",
+      "dbExDate": "2023-07-27",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2023-05-10",
+      "dbExDate": "2023-05-10",
+      "dateDiffDays": 0,
+      "amountDiff": 5.5,
+      "dbAmount": 11,
+      "jsonAmount": 5.5,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2023-03-20",
+      "dbExDate": "2023-03-20",
+      "dateDiffDays": 0,
+      "amountDiff": 4.5,
+      "dbAmount": 9,
+      "jsonAmount": 4.5,
+      "jsonDividendStr": "90%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2022-10-31",
+      "dbExDate": "2022-10-31",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2022-08-15",
+      "dbExDate": "2022-08-15",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2022-04-27",
+      "dbExDate": "2022-04-27",
+      "dateDiffDays": 0,
+      "amountDiff": 2.5,
+      "dbAmount": 5,
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2022-03-18",
+      "dbExDate": "2022-03-18",
+      "dateDiffDays": 0,
+      "amountDiff": 3.0,
+      "dbAmount": 6,
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "60%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2021-10-29",
+      "dbExDate": "2021-10-29",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2021-08-26",
+      "dbExDate": "2021-08-26",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2021-05-05",
+      "dbExDate": "2021-05-05",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2021-03-19",
+      "dbExDate": "2021-03-19",
+      "dateDiffDays": 0,
+      "amountDiff": 4.75,
+      "dbAmount": 9.5,
+      "jsonAmount": 4.75,
+      "jsonDividendStr": "95%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2020-05-13",
+      "dbExDate": "2020-05-13",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2020-03-13",
+      "dbExDate": "2020-03-13",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2019-10-31",
+      "dbExDate": "2019-10-31",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2019-09-11",
+      "dbExDate": "2019-09-11",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2019-06-04",
+      "dbExDate": "2019-06-03",
+      "dateDiffDays": 1,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2019-03-18",
+      "dbExDate": "2019-03-18",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2018-11-08",
+      "dbExDate": "2018-11-08",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2018-09-07",
+      "dbExDate": "2018-09-07",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2018-05-09",
+      "dbExDate": "2018-05-09",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2018-03-22",
+      "dbExDate": "2018-03-21",
+      "dateDiffDays": 1,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2017-11-09",
+      "dbExDate": "2017-11-09",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2017-08-09",
+      "dbExDate": "2017-08-09",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2017-05-10",
+      "dbExDate": "2017-05-10",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2017-03-15",
+      "dbExDate": "2017-03-15",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2016-11-09",
+      "dbExDate": "2016-11-09",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2016-09-01",
+      "dbExDate": "2016-09-01",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2016-06-03",
+      "dbExDate": "2016-06-03",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2016-03-25",
+      "dbExDate": "2016-03-16",
+      "dateDiffDays": 9,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%(CY15)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2015-12-03",
+      "dbExDate": "2015-12-03",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2015-08-12",
+      "dbExDate": "2015-08-12",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2015-05-14",
+      "dbExDate": "2015-05-14",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2015-03-18",
+      "dbExDate": "2015-03-18",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%(CY14)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2014-12-04",
+      "dbExDate": "2014-12-04",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2014-09-02",
+      "dbExDate": "2014-09-02",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2014-03-19",
+      "dbExDate": "2014-03-19",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%(CY13)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2013-11-13",
+      "dbExDate": "2013-11-13",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2013-09-13",
+      "dbExDate": "2013-09-13",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2013-05-14",
+      "dbExDate": "2013-05-14",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2013-03-19",
+      "dbExDate": "2013-03-19",
+      "dateDiffDays": 0,
+      "amountDiff": 1.75,
+      "dbAmount": 3.5,
+      "jsonAmount": 1.75,
+      "jsonDividendStr": "35%(CY12)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2012-11-21",
+      "dbExDate": "2012-11-21",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2012-08-08",
+      "dbExDate": "2012-08-08",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2012-03-14",
+      "dbExDate": "2012-03-14",
+      "dateDiffDays": 0,
+      "amountDiff": 3.0,
+      "dbAmount": 6,
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "60%(CY11)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2011-03-15",
+      "dbExDate": "2011-03-15",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%(CY10)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2024-09-12",
+      "dbExDate": "2024-09-12",
+      "dateDiffDays": 0,
+      "amountDiff": 12.0,
+      "dbAmount": 15,
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "150%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2023-09-14",
+      "dbExDate": "2023-09-14",
+      "dateDiffDays": 0,
+      "amountDiff": 14.4,
+      "dbAmount": 18,
+      "jsonAmount": 3.6,
+      "jsonDividendStr": "180%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2019-09-11",
+      "dbExDate": "2019-09-11",
+      "dateDiffDays": 0,
+      "amountDiff": 5.2,
+      "dbAmount": 6.5,
+      "jsonAmount": 1.3,
+      "jsonDividendStr": "65%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2018-09-12",
+      "dbExDate": "2018-09-12",
+      "dateDiffDays": 0,
+      "amountDiff": 6.4,
+      "dbAmount": 8,
+      "jsonAmount": 1.6,
+      "jsonDividendStr": "80%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2017-11-17",
+      "dbExDate": "2017-11-17",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2017-09-07",
+      "dbExDate": "2017-09-07",
+      "dateDiffDays": 0,
+      "amountDiff": 9.6,
+      "dbAmount": 12,
+      "jsonAmount": 2.4,
+      "jsonDividendStr": "120%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2014-10-02",
+      "dbExDate": "2014-10-02",
+      "dateDiffDays": 0,
+      "amountDiff": 7.2,
+      "dbAmount": 9,
+      "jsonAmount": 1.8,
+      "jsonDividendStr": "90%(FY14)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2013-10-14",
+      "dbExDate": "2013-10-14",
+      "dateDiffDays": 0,
+      "amountDiff": 6.4,
+      "dbAmount": 8,
+      "jsonAmount": 1.6,
+      "jsonDividendStr": "80%%(FY13)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2011-09-20",
+      "dbExDate": "2011-09-20",
+      "dateDiffDays": 0,
+      "amountDiff": 3.2,
+      "dbAmount": 4,
+      "jsonAmount": 0.8,
+      "jsonDividendStr": "40% (FY11)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LUCK",
+      "exDate": "2010-10-18",
+      "dbExDate": "2010-10-18",
+      "dateDiffDays": 0,
+      "amountDiff": 3.2,
+      "dbAmount": 4,
+      "jsonAmount": 0.8,
+      "jsonDividendStr": "40% (FY)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2025-04-18",
+      "dbExDate": "2025-04-18",
+      "dateDiffDays": 0,
+      "amountDiff": 4.8,
+      "dbAmount": 6,
+      "jsonAmount": 1.2,
+      "jsonDividendStr": "60%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2024-04-03",
+      "dbExDate": "2024-04-03",
+      "dateDiffDays": 0,
+      "amountDiff": 4.8,
+      "dbAmount": 6,
+      "jsonAmount": 1.2,
+      "jsonDividendStr": "60%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2023-05-15",
+      "dbExDate": "2023-05-15",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2022-03-31",
+      "dbExDate": "2022-03-31",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2021-03-22",
+      "dbExDate": "2021-03-22",
+      "dateDiffDays": 0,
+      "amountDiff": 2.8,
+      "dbAmount": 3.5,
+      "jsonAmount": 0.7,
+      "jsonDividendStr": "35%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2020-05-20",
+      "dbExDate": "2020-05-20",
+      "dateDiffDays": 0,
+      "amountDiff": 1.8,
+      "dbAmount": 2.25,
+      "jsonAmount": 0.45,
+      "jsonDividendStr": "22.50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2019-04-18",
+      "dbExDate": "2019-04-18",
+      "dateDiffDays": 0,
+      "amountDiff": 1.6,
+      "dbAmount": 2,
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2018-04-18",
+      "dbExDate": "2018-04-18",
+      "dateDiffDays": 0,
+      "amountDiff": 1.4,
+      "dbAmount": 1.75,
+      "jsonAmount": 0.35,
+      "jsonDividendStr": "17.50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2017-04-20",
+      "dbExDate": "2017-04-19",
+      "dateDiffDays": 1,
+      "amountDiff": 1.488,
+      "dbAmount": 1.86,
+      "jsonAmount": 0.372,
+      "jsonDividendStr": "18.6%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "SYS",
+      "exDate": "2016-04-20",
+      "dbExDate": "2016-04-20",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 1.25,
+      "jsonAmount": 0.25,
+      "jsonDividendStr": "12.50%(CY15)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2025-02-06",
+      "dbExDate": "2025-02-06",
+      "dateDiffDays": 0,
+      "amountDiff": 27.2,
+      "dbAmount": 34,
+      "jsonAmount": 6.8,
+      "jsonDividendStr": "340%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2024-09-18",
+      "dbExDate": "2024-09-18",
+      "dateDiffDays": 0,
+      "amountDiff": 26.4,
+      "dbAmount": 33,
+      "jsonAmount": 6.6,
+      "jsonDividendStr": "330%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2024-02-02",
+      "dbExDate": "2024-02-02",
+      "dateDiffDays": 0,
+      "amountDiff": 21.6,
+      "dbAmount": 27,
+      "jsonAmount": 5.4,
+      "jsonDividendStr": "270%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2023-09-18",
+      "dbExDate": "2023-09-18",
+      "dateDiffDays": 0,
+      "amountDiff": 26.4,
+      "dbAmount": 33,
+      "jsonAmount": 6.6,
+      "jsonDividendStr": "330%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2023-02-06",
+      "dbExDate": "2023-02-06",
+      "dateDiffDays": 0,
+      "amountDiff": 8.0,
+      "dbAmount": 10,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "100%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2022-09-19",
+      "dbExDate": "2022-09-19",
+      "dateDiffDays": 0,
+      "amountDiff": 12.0,
+      "dbAmount": 15,
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "150%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2022-02-07",
+      "dbExDate": "2022-02-07",
+      "dateDiffDays": 0,
+      "amountDiff": 16.0,
+      "dbAmount": 20,
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "200%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2021-09-21",
+      "dbExDate": "2021-09-21",
+      "dateDiffDays": 0,
+      "amountDiff": 16.0,
+      "dbAmount": 20,
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "200%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2021-02-15",
+      "dbExDate": "2021-02-15",
+      "dateDiffDays": 0,
+      "amountDiff": 16.0,
+      "dbAmount": 20,
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "200%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2020-09-18",
+      "dbExDate": "2020-09-18",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2020-02-13",
+      "dbExDate": "2020-02-13",
+      "dateDiffDays": 0,
+      "amountDiff": 8.8,
+      "dbAmount": 11,
+      "jsonAmount": 2.2,
+      "jsonDividendStr": "110%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2019-09-11",
+      "dbExDate": "2019-09-11",
+      "dateDiffDays": 0,
+      "amountDiff": 3.6,
+      "dbAmount": 4.5,
+      "jsonAmount": 0.9,
+      "jsonDividendStr": "45%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2019-02-14",
+      "dbExDate": "2019-02-14",
+      "dateDiffDays": 0,
+      "amountDiff": 3.6,
+      "dbAmount": 4.5,
+      "jsonAmount": 0.9,
+      "jsonDividendStr": "45%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2018-09-17",
+      "dbExDate": "2018-09-17",
+      "dateDiffDays": 0,
+      "amountDiff": 6.8,
+      "dbAmount": 8.5,
+      "jsonAmount": 1.7,
+      "jsonDividendStr": "85%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2018-02-08",
+      "dbExDate": "2018-02-08",
+      "dateDiffDays": 0,
+      "amountDiff": 6.4,
+      "dbAmount": 8,
+      "jsonAmount": 1.6,
+      "jsonDividendStr": "80%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2017-09-18",
+      "dbExDate": "2017-09-18",
+      "dateDiffDays": 0,
+      "amountDiff": 8.0,
+      "dbAmount": 10,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "100%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2017-02-09",
+      "dbExDate": "2017-02-09",
+      "dateDiffDays": 0,
+      "amountDiff": 6.4,
+      "dbAmount": 8,
+      "jsonAmount": 1.6,
+      "jsonDividendStr": "80%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2016-10-17",
+      "dbExDate": "2016-10-17",
+      "dateDiffDays": 0,
+      "amountDiff": 7.2,
+      "dbAmount": 9,
+      "jsonAmount": 1.8,
+      "jsonDividendStr": "90%(FY16)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2016-03-11",
+      "dbExDate": "2016-03-11",
+      "dateDiffDays": 0,
+      "amountDiff": 5.2,
+      "dbAmount": 6.5,
+      "jsonAmount": 1.3,
+      "jsonDividendStr": "65%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2015-10-20",
+      "dbExDate": "2015-10-20",
+      "dateDiffDays": 0,
+      "amountDiff": 5.2,
+      "dbAmount": 6.5,
+      "jsonAmount": 1.3,
+      "jsonDividendStr": "65%(FY15)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2015-03-06",
+      "dbExDate": "2015-03-06",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2014-10-15",
+      "dbExDate": "2014-10-15",
+      "dateDiffDays": 0,
+      "amountDiff": 3.2,
+      "dbAmount": 4,
+      "jsonAmount": 0.8,
+      "jsonDividendStr": "40%(FY14)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2014-05-05",
+      "dbExDate": "2014-05-05",
+      "dateDiffDays": 0,
+      "amountDiff": 3.2,
+      "dbAmount": 4,
+      "jsonAmount": 0.8,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2013-04-15",
+      "dbExDate": "2013-04-15",
+      "dateDiffDays": 0,
+      "amountDiff": 1.6,
+      "dbAmount": 2,
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "20%(CY12)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2012-09-17",
+      "dbExDate": "2012-09-17",
+      "dateDiffDays": 0,
+      "amountDiff": 2.8,
+      "dbAmount": 3.5,
+      "jsonAmount": 0.7,
+      "jsonDividendStr": "35%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2012-04-19",
+      "dbExDate": "2012-04-19",
+      "dateDiffDays": 0,
+      "amountDiff": 4.4,
+      "dbAmount": 5.5,
+      "jsonAmount": 1.1,
+      "jsonDividendStr": "55%(CY11)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2011-09-14",
+      "dbExDate": "2011-09-14",
+      "dateDiffDays": 0,
+      "amountDiff": 2.8,
+      "dbAmount": 3.5,
+      "jsonAmount": 0.7,
+      "jsonDividendStr": "35% (ii)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2011-04-19",
+      "dbExDate": "2011-04-19",
+      "dateDiffDays": 0,
+      "amountDiff": 9.6,
+      "dbAmount": 12,
+      "jsonAmount": 2.4,
+      "jsonDividendStr": "120%(CY10)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2010-09-23",
+      "dbExDate": "2010-09-14",
+      "dateDiffDays": 9,
+      "amountDiff": 4.4,
+      "dbAmount": 5.5,
+      "jsonAmount": 1.1,
+      "jsonDividendStr": "55%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2026-03-16",
+      "dbExDate": "2026-03-16",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2025-11-03",
+      "dbExDate": "2025-11-03",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2025-08-08",
+      "dbExDate": "2025-08-08",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2025-04-28",
+      "dbExDate": "2025-04-28",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2025-03-10",
+      "dbExDate": "2025-03-10",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2024-10-29",
+      "dbExDate": "2024-10-29",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2024-08-09",
+      "dbExDate": "2024-08-09",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2024-05-03",
+      "dbExDate": "2024-05-03",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2024-03-13",
+      "dbExDate": "2024-03-13",
+      "dateDiffDays": 0,
+      "amountDiff": 2.5,
+      "dbAmount": 5,
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2023-08-21",
+      "dbExDate": "2023-08-21",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 3,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2023-03-10",
+      "dbExDate": "2023-03-10",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2022-08-10",
+      "dbExDate": "2022-08-10",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2022-03-18",
+      "dbExDate": "2022-03-18",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2021-09-13",
+      "dbExDate": "2021-09-13",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2021-03-04",
+      "dbExDate": "2021-03-04",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2020-11-19",
+      "dbExDate": "2020-11-19",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2020-03-18",
+      "dbExDate": "2020-03-18",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2019-09-05",
+      "dbExDate": "2019-09-05",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2015-03-19",
+      "dbExDate": "2015-03-19",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%(CY14)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "BAFL",
+      "exDate": "2014-03-18",
+      "dbExDate": "2014-03-20",
+      "dateDiffDays": 2,
+      "amountDiff": 1.0,
+      "dbAmount": 2,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "20%(CY13)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "NATF",
+      "exDate": "2025-10-09",
+      "dbExDate": "2025-10-30",
+      "dateDiffDays": 21,
+      "amountDiff": 13.0,
+      "dbAmount": 18,
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "100%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "NATF",
+      "exDate": "2014-10-10",
+      "dbExDate": "2014-10-10",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 8,
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "80%(FY14)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "NATF",
+      "exDate": "2013-10-11",
+      "dbExDate": "2013-10-11",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 4,
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "NATF",
+      "exDate": "2013-03-15",
+      "dbExDate": "2013-03-15",
+      "dateDiffDays": 0,
+      "amountDiff": 1.75,
+      "dbAmount": 3.5,
+      "jsonAmount": 1.75,
+      "jsonDividendStr": "35%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "NATF",
+      "exDate": "2011-10-18",
+      "dbExDate": "2011-10-18",
+      "dateDiffDays": 0,
+      "amountDiff": 1.25,
+      "dbAmount": 2.5,
+      "jsonAmount": 1.25,
+      "jsonDividendStr": "25% (FY11)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2019-10-17",
+      "dbExDate": "2019-10-17",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 2.5,
+      "jsonAmount": 0.5,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2018-10-16",
+      "dbExDate": "2018-10-16",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2017-10-12",
+      "dbExDate": "2017-10-12",
+      "dateDiffDays": 0,
+      "amountDiff": 1.6,
+      "dbAmount": 2,
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2017-03-07",
+      "dbExDate": "2017-03-07",
+      "dateDiffDays": 0,
+      "amountDiff": 6.4,
+      "dbAmount": 8,
+      "jsonAmount": 1.6,
+      "jsonDividendStr": "80%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2016-11-10",
+      "dbExDate": "2016-11-10",
+      "dateDiffDays": 0,
+      "amountDiff": 3.2,
+      "dbAmount": 4,
+      "jsonAmount": 0.8,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2016-02-15",
+      "dbExDate": "2016-02-15",
+      "dateDiffDays": 0,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2015-10-07",
+      "dbExDate": "2015-10-07",
+      "dateDiffDays": 0,
+      "amountDiff": 3.2,
+      "dbAmount": 4,
+      "jsonAmount": 0.8,
+      "jsonDividendStr": "40%(FY15)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2015-04-23",
+      "dbExDate": "2015-04-23",
+      "dateDiffDays": 0,
+      "amountDiff": 2.81,
+      "dbAmount": 3.81,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2014-10-02",
+      "dbExDate": "2014-10-02",
+      "dateDiffDays": 0,
+      "amountDiff": 1.6,
+      "dbAmount": 2,
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "20%(FY14)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2013-10-11",
+      "dbExDate": "2013-10-22",
+      "dateDiffDays": 11,
+      "amountDiff": 4.0,
+      "dbAmount": 5,
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%(FY13)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2012-10-12",
+      "dbExDate": "2012-10-12",
+      "dateDiffDays": 0,
+      "amountDiff": 2.4,
+      "dbAmount": 3,
+      "jsonAmount": 0.6,
+      "jsonDividendStr": "30%(FY12)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KTML",
+      "exDate": "2025-10-08",
+      "dbExDate": "2025-10-08",
+      "dateDiffDays": 0,
+      "amountDiff": 1.6,
+      "dbAmount": 2,
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KTML",
+      "exDate": "2018-03-12",
+      "dbExDate": "2018-03-12",
+      "dateDiffDays": 0,
+      "amountDiff": 1.0,
+      "dbAmount": 1.25,
+      "jsonAmount": 0.25,
+      "jsonDividendStr": "12.50%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KTML",
+      "exDate": "2017-03-10",
+      "dbExDate": "2017-03-10",
+      "dateDiffDays": 0,
+      "amountDiff": 1.6,
+      "dbAmount": 2,
+      "jsonAmount": 0.4,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KTML",
+      "exDate": "2016-10-18",
+      "dbExDate": "2016-10-18",
+      "dateDiffDays": 0,
+      "amountDiff": 2.4,
+      "dbAmount": 3,
+      "jsonAmount": 0.6,
+      "jsonDividendStr": "30%(FY16)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KTML",
+      "exDate": "2016-02-10",
+      "dbExDate": "2016-02-10",
+      "dateDiffDays": 0,
+      "amountDiff": 1.2,
+      "dbAmount": 1.5,
+      "jsonAmount": 0.3,
+      "jsonDividendStr": "15%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "KTML",
+      "exDate": "2015-10-19",
+      "dbExDate": "2015-10-19",
+      "dateDiffDays": 0,
+      "amountDiff": 2.0,
+      "dbAmount": 2.5,
+      "jsonAmount": 0.5,
+      "jsonDividendStr": "25%(FY15)",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "THALL",
+      "exDate": "2025-10-10",
+      "dbExDate": "2025-10-10",
+      "dateDiffDays": 0,
+      "amountDiff": 18.0,
+      "dbAmount": 24,
+      "jsonAmount": 6.0,
+      "jsonDividendStr": "120%",
+      "dbFaceValue": 5.0
+    }
+  ]
+}

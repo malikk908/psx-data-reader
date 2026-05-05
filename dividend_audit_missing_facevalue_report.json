@@ -1,0 +1,2440 @@
+{
+  "audit_timestamp": "2026-05-05T15:29:21.675640",
+  "summary": {
+    "mode": "missing_face_value",
+    "total_json_records": 3622,
+    "processed_records": 1783,
+    "skipped_records": 1444,
+    "audited_stocks_count": 537,
+    "missing_in_db_count": 31,
+    "discrepancies_count": 5,
+    "date_tolerance_days": 32,
+    "amount_tolerance": 1.0
+  },
+  "audited_stocks": [
+    {
+      "symbol": "CSIL",
+      "name": null
+    },
+    {
+      "symbol": "HTL",
+      "name": null
+    },
+    {
+      "symbol": "POWER",
+      "name": null
+    },
+    {
+      "symbol": "ATRL",
+      "name": null
+    },
+    {
+      "symbol": "ICCI",
+      "name": null
+    },
+    {
+      "symbol": "AHL",
+      "name": null
+    },
+    {
+      "symbol": "CASH",
+      "name": null
+    },
+    {
+      "symbol": "CHAS",
+      "name": null
+    },
+    {
+      "symbol": "ENGROH",
+      "name": null
+    },
+    {
+      "symbol": "FCL",
+      "name": null
+    },
+    {
+      "symbol": "FIBLM",
+      "name": null
+    },
+    {
+      "symbol": "FLYNG",
+      "name": null
+    },
+    {
+      "symbol": "HABSM",
+      "name": null
+    },
+    {
+      "symbol": "KAPCO",
+      "name": null
+    },
+    {
+      "symbol": "KCL",
+      "name": null
+    },
+    {
+      "symbol": "SAIF",
+      "name": null
+    },
+    {
+      "symbol": "UVIC",
+      "name": null
+    },
+    {
+      "symbol": "MCBIM",
+      "name": null
+    },
+    {
+      "symbol": "MTL",
+      "name": null
+    },
+    {
+      "symbol": "NML",
+      "name": null
+    },
+    {
+      "symbol": "NRL",
+      "name": null
+    },
+    {
+      "symbol": "GDL",
+      "name": null
+    },
+    {
+      "symbol": "IREIT",
+      "name": null
+    },
+    {
+      "symbol": "ARCTM",
+      "name": null
+    },
+    {
+      "symbol": "ECOP",
+      "name": null
+    },
+    {
+      "symbol": "GHGL",
+      "name": null
+    },
+    {
+      "symbol": "POWERPS",
+      "name": null
+    },
+    {
+      "symbol": "FDPL",
+      "name": null
+    },
+    {
+      "symbol": "PRET",
+      "name": null
+    },
+    {
+      "symbol": "ANL",
+      "name": null
+    },
+    {
+      "symbol": "ATBA",
+      "name": null
+    },
+    {
+      "symbol": "AWTX",
+      "name": null
+    },
+    {
+      "symbol": "CFL",
+      "name": null
+    },
+    {
+      "symbol": "CSAP",
+      "name": null
+    },
+    {
+      "symbol": "DFML",
+      "name": null
+    },
+    {
+      "symbol": "FEM",
+      "name": null
+    },
+    {
+      "symbol": "FIMM",
+      "name": null
+    },
+    {
+      "symbol": "GRYL",
+      "name": null
+    },
+    {
+      "symbol": "JSBL",
+      "name": null
+    },
+    {
+      "symbol": "KHYT",
+      "name": null
+    },
+    {
+      "symbol": "LPGL",
+      "name": null
+    },
+    {
+      "symbol": "MEHT",
+      "name": null
+    },
+    {
+      "symbol": "MZNPETF",
+      "name": null
+    },
+    {
+      "symbol": "SHJS",
+      "name": null
+    },
+    {
+      "symbol": "TPLL",
+      "name": null
+    },
+    {
+      "symbol": "TSMF",
+      "name": null
+    },
+    {
+      "symbol": "ALTN",
+      "name": null
+    },
+    {
+      "symbol": "ANTM",
+      "name": null
+    },
+    {
+      "symbol": "ATIL",
+      "name": null
+    },
+    {
+      "symbol": "AVN",
+      "name": null
+    },
+    {
+      "symbol": "DIIL",
+      "name": null
+    },
+    {
+      "symbol": "EXIDE",
+      "name": null
+    },
+    {
+      "symbol": "KOHTM",
+      "name": null
+    },
+    {
+      "symbol": "KSBP",
+      "name": null
+    },
+    {
+      "symbol": "LSECL",
+      "name": null
+    },
+    {
+      "symbol": "AGIL",
+      "name": null
+    },
+    {
+      "symbol": "BRRG",
+      "name": null
+    },
+    {
+      "symbol": "KOHE",
+      "name": null
+    },
+    {
+      "symbol": "PACE",
+      "name": null
+    },
+    {
+      "symbol": "PSYL",
+      "name": null
+    },
+    {
+      "symbol": "SHCM",
+      "name": null
+    },
+    {
+      "symbol": "TGL",
+      "name": null
+    },
+    {
+      "symbol": "TPL",
+      "name": null
+    },
+    {
+      "symbol": "TPLI",
+      "name": null
+    },
+    {
+      "symbol": "PAKD",
+      "name": null
+    },
+    {
+      "symbol": "RPL",
+      "name": null
+    },
+    {
+      "symbol": "SZTM",
+      "name": null
+    },
+    {
+      "symbol": "AMBL",
+      "name": null
+    },
+    {
+      "symbol": "GLAXO",
+      "name": null
+    },
+    {
+      "symbol": "NETSOL",
+      "name": null
+    },
+    {
+      "symbol": "KOHP",
+      "name": null
+    },
+    {
+      "symbol": "SIBL",
+      "name": null
+    },
+    {
+      "symbol": "SURC",
+      "name": null
+    },
+    {
+      "symbol": "ZTL",
+      "name": null
+    },
+    {
+      "symbol": "OML",
+      "name": null
+    },
+    {
+      "symbol": "ABL",
+      "name": null
+    },
+    {
+      "symbol": "AGTL",
+      "name": null
+    },
+    {
+      "symbol": "AKDHL",
+      "name": null
+    },
+    {
+      "symbol": "BIFO",
+      "name": null
+    },
+    {
+      "symbol": "DAAG",
+      "name": null
+    },
+    {
+      "symbol": "DADX",
+      "name": null
+    },
+    {
+      "symbol": "DGKC",
+      "name": null
+    },
+    {
+      "symbol": "FANM",
+      "name": null
+    },
+    {
+      "symbol": "HRPL",
+      "name": null
+    },
+    {
+      "symbol": "IBFL",
+      "name": null
+    },
+    {
+      "symbol": "INKL",
+      "name": null
+    },
+    {
+      "symbol": "JSGCL",
+      "name": null
+    },
+    {
+      "symbol": "JSML",
+      "name": null
+    },
+    {
+      "symbol": "MRNS",
+      "name": null
+    },
+    {
+      "symbol": "MSCL",
+      "name": null
+    },
+    {
+      "symbol": "OLPM",
+      "name": null
+    },
+    {
+      "symbol": "PIBTL",
+      "name": null
+    },
+    {
+      "symbol": "PSX",
+      "name": null
+    },
+    {
+      "symbol": "SANSM",
+      "name": null
+    },
+    {
+      "symbol": "SCL",
+      "name": null
+    },
+    {
+      "symbol": "SPWL",
+      "name": null
+    },
+    {
+      "symbol": "TSPL",
+      "name": null
+    },
+    {
+      "symbol": "WASL",
+      "name": null
+    },
+    {
+      "symbol": "BATA",
+      "name": null
+    },
+    {
+      "symbol": "CLVL",
+      "name": null
+    },
+    {
+      "symbol": "JLICL",
+      "name": null
+    },
+    {
+      "symbol": "MUGHAL",
+      "name": null
+    },
+    {
+      "symbol": "WAVESAPP",
+      "name": null
+    },
+    {
+      "symbol": "AICL",
+      "name": null
+    },
+    {
+      "symbol": "CLCPS",
+      "name": null
+    },
+    {
+      "symbol": "ASLCPS",
+      "name": null
+    },
+    {
+      "symbol": "BAFS",
+      "name": null
+    },
+    {
+      "symbol": "BCL",
+      "name": null
+    },
+    {
+      "symbol": "BIPL",
+      "name": null
+    },
+    {
+      "symbol": "DLL",
+      "name": null
+    },
+    {
+      "symbol": "EFERT",
+      "name": null
+    },
+    {
+      "symbol": "GOC",
+      "name": null
+    },
+    {
+      "symbol": "NBP",
+      "name": null
+    },
+    {
+      "symbol": "NRSL",
+      "name": null
+    },
+    {
+      "symbol": "PREMA",
+      "name": null
+    },
+    {
+      "symbol": "PTC",
+      "name": null
+    },
+    {
+      "symbol": "SHSML",
+      "name": null
+    },
+    {
+      "symbol": "SUTM",
+      "name": null
+    },
+    {
+      "symbol": "TBL",
+      "name": null
+    },
+    {
+      "symbol": "UDLI",
+      "name": null
+    },
+    {
+      "symbol": "ACIETF",
+      "name": null
+    },
+    {
+      "symbol": "AGSML",
+      "name": null
+    },
+    {
+      "symbol": "AKGL",
+      "name": null
+    },
+    {
+      "symbol": "ALNRS",
+      "name": null
+    },
+    {
+      "symbol": "ANLNV",
+      "name": null
+    },
+    {
+      "symbol": "EPCLPS",
+      "name": null
+    },
+    {
+      "symbol": "FCIBL",
+      "name": null
+    },
+    {
+      "symbol": "GIL",
+      "name": null
+    },
+    {
+      "symbol": "HBLTETF",
+      "name": null
+    },
+    {
+      "symbol": "HINO",
+      "name": null
+    },
+    {
+      "symbol": "IBLHL",
+      "name": null
+    },
+    {
+      "symbol": "IDSM",
+      "name": null
+    },
+    {
+      "symbol": "JSIL",
+      "name": null
+    },
+    {
+      "symbol": "KOSM",
+      "name": null
+    },
+    {
+      "symbol": "NESTLE",
+      "name": null
+    },
+    {
+      "symbol": "PKGS",
+      "name": null
+    },
+    {
+      "symbol": "POML",
+      "name": null
+    },
+    {
+      "symbol": "RICL",
+      "name": null
+    },
+    {
+      "symbol": "TATM",
+      "name": null
+    },
+    {
+      "symbol": "TSML",
+      "name": null
+    },
+    {
+      "symbol": "UBDL",
+      "name": null
+    },
+    {
+      "symbol": "ANLPS",
+      "name": null
+    },
+    {
+      "symbol": "DSIL",
+      "name": null
+    },
+    {
+      "symbol": "FTSM",
+      "name": null
+    },
+    {
+      "symbol": "PPL",
+      "name": null
+    },
+    {
+      "symbol": "SCBPL",
+      "name": null
+    },
+    {
+      "symbol": "AKBL",
+      "name": null
+    },
+    {
+      "symbol": "BWCL",
+      "name": null
+    },
+    {
+      "symbol": "TOWL",
+      "name": null
+    },
+    {
+      "symbol": "AABS",
+      "name": null
+    },
+    {
+      "symbol": "CRTM",
+      "name": null
+    },
+    {
+      "symbol": "GADT",
+      "name": null
+    },
+    {
+      "symbol": "ISIL",
+      "name": null
+    },
+    {
+      "symbol": "KOIL",
+      "name": null
+    },
+    {
+      "symbol": "KPUS",
+      "name": null
+    },
+    {
+      "symbol": "MQTM",
+      "name": null
+    },
+    {
+      "symbol": "NATM",
+      "name": null
+    },
+    {
+      "symbol": "NPL",
+      "name": null
+    },
+    {
+      "symbol": "PSO",
+      "name": null
+    },
+    {
+      "symbol": "SBL",
+      "name": null
+    },
+    {
+      "symbol": "SHDT",
+      "name": null
+    },
+    {
+      "symbol": "SHEZ",
+      "name": null
+    },
+    {
+      "symbol": "SLGL",
+      "name": null
+    },
+    {
+      "symbol": "FHAM",
+      "name": null
+    },
+    {
+      "symbol": "JSMFETF",
+      "name": null
+    },
+    {
+      "symbol": "KHTC",
+      "name": null
+    },
+    {
+      "symbol": "TOMCL",
+      "name": null
+    },
+    {
+      "symbol": "APL",
+      "name": null
+    },
+    {
+      "symbol": "DHPL",
+      "name": null
+    },
+    {
+      "symbol": "IMAGE",
+      "name": null
+    },
+    {
+      "symbol": "JDMT",
+      "name": null
+    },
+    {
+      "symbol": "KEL",
+      "name": null
+    },
+    {
+      "symbol": "PAKT",
+      "name": null
+    },
+    {
+      "symbol": "PAKQATAR",
+      "name": null
+    },
+    {
+      "symbol": "ICL",
+      "name": null
+    },
+    {
+      "symbol": "TRIPF",
+      "name": null
+    },
+    {
+      "symbol": "BOK",
+      "name": null
+    },
+    {
+      "symbol": "EFUG",
+      "name": null
+    },
+    {
+      "symbol": "TSBL",
+      "name": null
+    },
+    {
+      "symbol": "AGHA",
+      "name": null
+    },
+    {
+      "symbol": "ANSM",
+      "name": null
+    },
+    {
+      "symbol": "ASHT",
+      "name": null
+    },
+    {
+      "symbol": "BOP",
+      "name": null
+    },
+    {
+      "symbol": "DMC",
+      "name": null
+    },
+    {
+      "symbol": "EFUL",
+      "name": null
+    },
+    {
+      "symbol": "ELSM",
+      "name": null
+    },
+    {
+      "symbol": "FATIMA",
+      "name": null
+    },
+    {
+      "symbol": "FFL",
+      "name": null
+    },
+    {
+      "symbol": "FZCM",
+      "name": null
+    },
+    {
+      "symbol": "GGGL",
+      "name": null
+    },
+    {
+      "symbol": "HBL",
+      "name": null
+    },
+    {
+      "symbol": "HCAR",
+      "name": null
+    },
+    {
+      "symbol": "HUSI",
+      "name": null
+    },
+    {
+      "symbol": "PICT",
+      "name": null
+    },
+    {
+      "symbol": "PMPK",
+      "name": null
+    },
+    {
+      "symbol": "REDCO",
+      "name": null
+    },
+    {
+      "symbol": "SAZEW",
+      "name": null
+    },
+    {
+      "symbol": "SEL",
+      "name": null
+    },
+    {
+      "symbol": "SFL",
+      "name": null
+    },
+    {
+      "symbol": "TREET",
+      "name": null
+    },
+    {
+      "symbol": "786",
+      "name": null
+    },
+    {
+      "symbol": "ALAC",
+      "name": null
+    },
+    {
+      "symbol": "BBFL",
+      "name": null
+    },
+    {
+      "symbol": "DNCC",
+      "name": null
+    },
+    {
+      "symbol": "GGL",
+      "name": null
+    },
+    {
+      "symbol": "GTYR",
+      "name": null
+    },
+    {
+      "symbol": "JKSM",
+      "name": null
+    },
+    {
+      "symbol": "LIVEN",
+      "name": null
+    },
+    {
+      "symbol": "LOADS",
+      "name": null
+    },
+    {
+      "symbol": "MACTER",
+      "name": null
+    },
+    {
+      "symbol": "AHTM",
+      "name": null
+    },
+    {
+      "symbol": "FPRM",
+      "name": null
+    },
+    {
+      "symbol": "GCIL",
+      "name": null
+    },
+    {
+      "symbol": "MEBL",
+      "name": null
+    },
+    {
+      "symbol": "MFL",
+      "name": null
+    },
+    {
+      "symbol": "MIRKS",
+      "name": null
+    },
+    {
+      "symbol": "MSOT",
+      "name": null
+    },
+    {
+      "symbol": "MSOTPS",
+      "name": null
+    },
+    {
+      "symbol": "PAKRI",
+      "name": null
+    },
+    {
+      "symbol": "PIAHCLA",
+      "name": null
+    },
+    {
+      "symbol": "PRWM",
+      "name": null
+    },
+    {
+      "symbol": "SIEM",
+      "name": null
+    },
+    {
+      "symbol": "SSGC",
+      "name": null
+    },
+    {
+      "symbol": "STYLERS",
+      "name": null
+    },
+    {
+      "symbol": "WAHN",
+      "name": null
+    },
+    {
+      "symbol": "PKGI",
+      "name": null
+    },
+    {
+      "symbol": "PNSC",
+      "name": null
+    },
+    {
+      "symbol": "ICIBL",
+      "name": null
+    },
+    {
+      "symbol": "ISL",
+      "name": null
+    },
+    {
+      "symbol": "MDTL",
+      "name": null
+    },
+    {
+      "symbol": "ORM",
+      "name": null
+    },
+    {
+      "symbol": "TICL",
+      "name": null
+    },
+    {
+      "symbol": "BFMOD",
+      "name": null
+    },
+    {
+      "symbol": "DCR",
+      "name": null
+    },
+    {
+      "symbol": "GRR",
+      "name": null
+    },
+    {
+      "symbol": "POL",
+      "name": null
+    },
+    {
+      "symbol": "SINDM",
+      "name": null
+    },
+    {
+      "symbol": "BML",
+      "name": null
+    },
+    {
+      "symbol": "AGL",
+      "name": null
+    },
+    {
+      "symbol": "AGLNCPS",
+      "name": null
+    },
+    {
+      "symbol": "BFAGRO",
+      "name": null
+    },
+    {
+      "symbol": "CTM",
+      "name": null
+    },
+    {
+      "symbol": "DINT",
+      "name": null
+    },
+    {
+      "symbol": "FCONM",
+      "name": null
+    },
+    {
+      "symbol": "FTMM",
+      "name": null
+    },
+    {
+      "symbol": "HGFA",
+      "name": null
+    },
+    {
+      "symbol": "JVDCPS",
+      "name": null
+    },
+    {
+      "symbol": "LPL",
+      "name": null
+    },
+    {
+      "symbol": "PAEL",
+      "name": null
+    },
+    {
+      "symbol": "TPLP",
+      "name": null
+    },
+    {
+      "symbol": "MUGHALC",
+      "name": null
+    },
+    {
+      "symbol": "NCL",
+      "name": null
+    },
+    {
+      "symbol": "NICL",
+      "name": null
+    },
+    {
+      "symbol": "OTSU",
+      "name": null
+    },
+    {
+      "symbol": "PRL",
+      "name": null
+    },
+    {
+      "symbol": "SHFA",
+      "name": null
+    },
+    {
+      "symbol": "ZIL",
+      "name": null
+    },
+    {
+      "symbol": "SRR",
+      "name": null
+    },
+    {
+      "symbol": "BHAT",
+      "name": null
+    },
+    {
+      "symbol": "ELCM",
+      "name": null
+    },
+    {
+      "symbol": "GLPL",
+      "name": null
+    },
+    {
+      "symbol": "GVGL",
+      "name": null
+    },
+    {
+      "symbol": "HAFL",
+      "name": null
+    },
+    {
+      "symbol": "HINOON",
+      "name": null
+    },
+    {
+      "symbol": "IDYM",
+      "name": null
+    },
+    {
+      "symbol": "IML",
+      "name": null
+    },
+    {
+      "symbol": "IMS",
+      "name": null
+    },
+    {
+      "symbol": "JSCL",
+      "name": null
+    },
+    {
+      "symbol": "MARI",
+      "name": null
+    },
+    {
+      "symbol": "OCTOPUS",
+      "name": null
+    },
+    {
+      "symbol": "SGF",
+      "name": null
+    },
+    {
+      "symbol": "SLCPA",
+      "name": null
+    },
+    {
+      "symbol": "SNAI",
+      "name": null
+    },
+    {
+      "symbol": "STCL",
+      "name": null
+    },
+    {
+      "symbol": "TPLT",
+      "name": null
+    },
+    {
+      "symbol": "UBLPETF",
+      "name": null
+    },
+    {
+      "symbol": "WAVES",
+      "name": null
+    },
+    {
+      "symbol": "GATM",
+      "name": null
+    },
+    {
+      "symbol": "GCWL",
+      "name": null
+    },
+    {
+      "symbol": "IGIL",
+      "name": null
+    },
+    {
+      "symbol": "PIM",
+      "name": null
+    },
+    {
+      "symbol": "PINL",
+      "name": null
+    },
+    {
+      "symbol": "PIOC",
+      "name": null
+    },
+    {
+      "symbol": "TRG",
+      "name": null
+    },
+    {
+      "symbol": "HPL",
+      "name": null
+    },
+    {
+      "symbol": "JGICL",
+      "name": null
+    },
+    {
+      "symbol": "JVDC",
+      "name": null
+    },
+    {
+      "symbol": "PABC",
+      "name": null
+    },
+    {
+      "symbol": "RCML",
+      "name": null
+    },
+    {
+      "symbol": "ASTM",
+      "name": null
+    },
+    {
+      "symbol": "ACPL",
+      "name": null
+    },
+    {
+      "symbol": "ALIFE",
+      "name": null
+    },
+    {
+      "symbol": "CLOV",
+      "name": null
+    },
+    {
+      "symbol": "ESBL",
+      "name": null
+    },
+    {
+      "symbol": "EWIC",
+      "name": null
+    },
+    {
+      "symbol": "FASM",
+      "name": null
+    },
+    {
+      "symbol": "FCCL",
+      "name": null
+    },
+    {
+      "symbol": "FECTC",
+      "name": null
+    },
+    {
+      "symbol": "GAL",
+      "name": null
+    },
+    {
+      "symbol": "GFIL",
+      "name": null
+    },
+    {
+      "symbol": "HIFA",
+      "name": null
+    },
+    {
+      "symbol": "HUBC",
+      "name": null
+    },
+    {
+      "symbol": "INDU",
+      "name": null
+    },
+    {
+      "symbol": "ITTEFAQ",
+      "name": null
+    },
+    {
+      "symbol": "JSCLPSA",
+      "name": null
+    },
+    {
+      "symbol": "JSGBETF",
+      "name": null
+    },
+    {
+      "symbol": "MCB",
+      "name": null
+    },
+    {
+      "symbol": "MERIT",
+      "name": null
+    },
+    {
+      "symbol": "NITGETF",
+      "name": null
+    },
+    {
+      "symbol": "SASML",
+      "name": null
+    },
+    {
+      "symbol": "SEARL",
+      "name": null
+    },
+    {
+      "symbol": "SITC",
+      "name": null
+    },
+    {
+      "symbol": "SNBL",
+      "name": null
+    },
+    {
+      "symbol": "STL",
+      "name": null
+    },
+    {
+      "symbol": "UDPL",
+      "name": null
+    },
+    {
+      "symbol": "UPFL",
+      "name": null
+    },
+    {
+      "symbol": "ADMM",
+      "name": null
+    },
+    {
+      "symbol": "AGIC",
+      "name": null
+    },
+    {
+      "symbol": "CHCC",
+      "name": null
+    },
+    {
+      "symbol": "FRCL",
+      "name": null
+    },
+    {
+      "symbol": "FRSM",
+      "name": null
+    },
+    {
+      "symbol": "MFFL",
+      "name": null
+    },
+    {
+      "symbol": "UNIC",
+      "name": null
+    },
+    {
+      "symbol": "UNITY",
+      "name": null
+    },
+    {
+      "symbol": "NONS",
+      "name": null
+    },
+    {
+      "symbol": "SHNI",
+      "name": null
+    },
+    {
+      "symbol": "AATM",
+      "name": null
+    },
+    {
+      "symbol": "ARPL",
+      "name": null
+    },
+    {
+      "symbol": "ASIC",
+      "name": null
+    },
+    {
+      "symbol": "ASTL",
+      "name": null
+    },
+    {
+      "symbol": "BAHL",
+      "name": null
+    },
+    {
+      "symbol": "CHBL",
+      "name": null
+    },
+    {
+      "symbol": "DYNO",
+      "name": null
+    },
+    {
+      "symbol": "FCEPL",
+      "name": null
+    },
+    {
+      "symbol": "FECM",
+      "name": null
+    },
+    {
+      "symbol": "FPJM",
+      "name": null
+    },
+    {
+      "symbol": "HICL",
+      "name": null
+    },
+    {
+      "symbol": "IPAK",
+      "name": null
+    },
+    {
+      "symbol": "JDWS",
+      "name": null
+    },
+    {
+      "symbol": "LEUL",
+      "name": null
+    },
+    {
+      "symbol": "LOTCHEM",
+      "name": null
+    },
+    {
+      "symbol": "CNERGY",
+      "name": null
+    },
+    {
+      "symbol": "IDRT",
+      "name": null
+    },
+    {
+      "symbol": "MWMP",
+      "name": null
+    },
+    {
+      "symbol": "NEXT",
+      "name": null
+    },
+    {
+      "symbol": "PCAL",
+      "name": null
+    },
+    {
+      "symbol": "REWM",
+      "name": null
+    },
+    {
+      "symbol": "SEPL",
+      "name": null
+    },
+    {
+      "symbol": "STML",
+      "name": null
+    },
+    {
+      "symbol": "UCAPM",
+      "name": null
+    },
+    {
+      "symbol": "WTL",
+      "name": null
+    },
+    {
+      "symbol": "OLPL",
+      "name": null
+    },
+    {
+      "symbol": "QUICE",
+      "name": null
+    },
+    {
+      "symbol": "TRSM",
+      "name": null
+    },
+    {
+      "symbol": "INIL",
+      "name": null
+    },
+    {
+      "symbol": "PGLC",
+      "name": null
+    },
+    {
+      "symbol": "YOUW",
+      "name": null
+    },
+    {
+      "symbol": "ADAMS",
+      "name": null
+    },
+    {
+      "symbol": "AKDSL",
+      "name": null
+    },
+    {
+      "symbol": "BNWM",
+      "name": null
+    },
+    {
+      "symbol": "BUXL",
+      "name": null
+    },
+    {
+      "symbol": "COLG",
+      "name": null
+    },
+    {
+      "symbol": "CYAN",
+      "name": null
+    },
+    {
+      "symbol": "DFSM",
+      "name": null
+    },
+    {
+      "symbol": "FFLM",
+      "name": null
+    },
+    {
+      "symbol": "HMB",
+      "name": null
+    },
+    {
+      "symbol": "IGIHL",
+      "name": null
+    },
+    {
+      "symbol": "MLCF",
+      "name": null
+    },
+    {
+      "symbol": "OGDC",
+      "name": null
+    },
+    {
+      "symbol": "RUPL",
+      "name": null
+    },
+    {
+      "symbol": "SSOM",
+      "name": null
+    },
+    {
+      "symbol": "ZAHID",
+      "name": null
+    },
+    {
+      "symbol": "ZAL",
+      "name": null
+    },
+    {
+      "symbol": "ARPAK",
+      "name": null
+    },
+    {
+      "symbol": "ASLPS",
+      "name": null
+    },
+    {
+      "symbol": "BPL",
+      "name": null
+    },
+    {
+      "symbol": "EPQL",
+      "name": null
+    },
+    {
+      "symbol": "MACFL",
+      "name": null
+    },
+    {
+      "symbol": "NSRM",
+      "name": null
+    },
+    {
+      "symbol": "PQGTL",
+      "name": null
+    },
+    {
+      "symbol": "BFBIO",
+      "name": null
+    },
+    {
+      "symbol": "SAPT",
+      "name": null
+    },
+    {
+      "symbol": "STJT",
+      "name": null
+    },
+    {
+      "symbol": "DCL",
+      "name": null
+    },
+    {
+      "symbol": "DOL",
+      "name": null
+    },
+    {
+      "symbol": "EPCL",
+      "name": null
+    },
+    {
+      "symbol": "ABOT",
+      "name": null
+    },
+    {
+      "symbol": "AIRLINK",
+      "name": null
+    },
+    {
+      "symbol": "ATLH",
+      "name": null
+    },
+    {
+      "symbol": "BGL",
+      "name": null
+    },
+    {
+      "symbol": "CCM",
+      "name": null
+    },
+    {
+      "symbol": "CEPB",
+      "name": null
+    },
+    {
+      "symbol": "DEL",
+      "name": null
+    },
+    {
+      "symbol": "FFC",
+      "name": null
+    },
+    {
+      "symbol": "FML",
+      "name": null
+    },
+    {
+      "symbol": "GWLC",
+      "name": null
+    },
+    {
+      "symbol": "HAEL",
+      "name": null
+    },
+    {
+      "symbol": "MUREB",
+      "name": null
+    },
+    {
+      "symbol": "NBPGETF",
+      "name": null
+    },
+    {
+      "symbol": "OBOY",
+      "name": null
+    },
+    {
+      "symbol": "PIAHCLB",
+      "name": null
+    },
+    {
+      "symbol": "PPP",
+      "name": null
+    },
+    {
+      "symbol": "PSEL",
+      "name": null
+    },
+    {
+      "symbol": "PTL",
+      "name": null
+    },
+    {
+      "symbol": "RMPL",
+      "name": null
+    },
+    {
+      "symbol": "SMCPL",
+      "name": null
+    },
+    {
+      "symbol": "TCORPCPS",
+      "name": null
+    },
+    {
+      "symbol": "TELE",
+      "name": null
+    },
+    {
+      "symbol": "ITANZ",
+      "name": null
+    },
+    {
+      "symbol": "HALEON",
+      "name": null
+    },
+    {
+      "symbol": "NCPL",
+      "name": null
+    },
+    {
+      "symbol": "PAKOXY",
+      "name": null
+    },
+    {
+      "symbol": "SARC",
+      "name": null
+    },
+    {
+      "symbol": "BERG",
+      "name": null
+    },
+    {
+      "symbol": "FCSC",
+      "name": null
+    },
+    {
+      "symbol": "AGP",
+      "name": null
+    },
+    {
+      "symbol": "ASL",
+      "name": null
+    },
+    {
+      "symbol": "BAPL",
+      "name": null
+    },
+    {
+      "symbol": "BTL",
+      "name": null
+    },
+    {
+      "symbol": "BWHL",
+      "name": null
+    },
+    {
+      "symbol": "CENI",
+      "name": null
+    },
+    {
+      "symbol": "CPHL",
+      "name": null
+    },
+    {
+      "symbol": "CPPL",
+      "name": null
+    },
+    {
+      "symbol": "EMCO",
+      "name": null
+    },
+    {
+      "symbol": "FABL",
+      "name": null
+    },
+    {
+      "symbol": "FEROZ",
+      "name": null
+    },
+    {
+      "symbol": "GHNI",
+      "name": null
+    },
+    {
+      "symbol": "ILP",
+      "name": null
+    },
+    {
+      "symbol": "MIIETF",
+      "name": null
+    },
+    {
+      "symbol": "SYM",
+      "name": null
+    },
+    {
+      "symbol": "TCORP",
+      "name": null
+    },
+    {
+      "symbol": "LSEFSL",
+      "name": null
+    },
+    {
+      "symbol": "NAGC",
+      "name": null
+    },
+    {
+      "symbol": "PAKL",
+      "name": null
+    },
+    {
+      "symbol": "PKGP",
+      "name": null
+    },
+    {
+      "symbol": "PMRS",
+      "name": null
+    },
+    {
+      "symbol": "SERT",
+      "name": null
+    },
+    {
+      "symbol": "SGPL",
+      "name": null
+    },
+    {
+      "symbol": "SNGP",
+      "name": null
+    },
+    {
+      "symbol": "SRVI",
+      "name": null
+    },
+    {
+      "symbol": "STPL",
+      "name": null
+    },
+    {
+      "symbol": "TPLRF1",
+      "name": null
+    },
+    {
+      "symbol": "WAFI",
+      "name": null
+    },
+    {
+      "symbol": "AAL",
+      "name": null
+    },
+    {
+      "symbol": "AASM",
+      "name": null
+    },
+    {
+      "symbol": "ABSON",
+      "name": null
+    },
+    {
+      "symbol": "AMSL",
+      "name": null
+    },
+    {
+      "symbol": "AMTEX",
+      "name": null
+    },
+    {
+      "symbol": "ANNT",
+      "name": null
+    },
+    {
+      "symbol": "APOT",
+      "name": null
+    },
+    {
+      "symbol": "ARUJ",
+      "name": null
+    },
+    {
+      "symbol": "ASC",
+      "name": null
+    },
+    {
+      "symbol": "AZMT",
+      "name": null
+    },
+    {
+      "symbol": "BELA",
+      "name": null
+    },
+    {
+      "symbol": "BIIC",
+      "name": null
+    },
+    {
+      "symbol": "CJPL",
+      "name": null
+    },
+    {
+      "symbol": "DBCI",
+      "name": null
+    },
+    {
+      "symbol": "DBSL",
+      "name": null
+    },
+    {
+      "symbol": "DCTL",
+      "name": null
+    },
+    {
+      "symbol": "DKTM",
+      "name": null
+    },
+    {
+      "symbol": "DMTM",
+      "name": null
+    },
+    {
+      "symbol": "DSFL",
+      "name": null
+    },
+    {
+      "symbol": "DSL",
+      "name": null
+    },
+    {
+      "symbol": "DWAE",
+      "name": null
+    },
+    {
+      "symbol": "DWSM",
+      "name": null
+    },
+    {
+      "symbol": "DWTM",
+      "name": null
+    },
+    {
+      "symbol": "ENGL",
+      "name": null
+    },
+    {
+      "symbol": "FAEL",
+      "name": null
+    },
+    {
+      "symbol": "FCEL",
+      "name": null
+    },
+    {
+      "symbol": "FIL",
+      "name": null
+    },
+    {
+      "symbol": "FIM",
+      "name": null
+    },
+    {
+      "symbol": "FNBM",
+      "name": null
+    },
+    {
+      "symbol": "FSWL",
+      "name": null
+    },
+    {
+      "symbol": "FTHM",
+      "name": null
+    },
+    {
+      "symbol": "GAMON",
+      "name": null
+    },
+    {
+      "symbol": "GLOT",
+      "name": null
+    },
+    {
+      "symbol": "GSPM",
+      "name": null
+    },
+    {
+      "symbol": "GUSM",
+      "name": null
+    },
+    {
+      "symbol": "GUTM",
+      "name": null
+    },
+    {
+      "symbol": "HADC",
+      "name": null
+    },
+    {
+      "symbol": "HAJT",
+      "name": null
+    },
+    {
+      "symbol": "HASCOL",
+      "name": null
+    },
+    {
+      "symbol": "HATM",
+      "name": null
+    },
+    {
+      "symbol": "HIRAT",
+      "name": null
+    },
+    {
+      "symbol": "HKKT",
+      "name": null
+    },
+    {
+      "symbol": "HMIM",
+      "name": null
+    },
+    {
+      "symbol": "HSPI",
+      "name": null
+    },
+    {
+      "symbol": "HWQS",
+      "name": null
+    },
+    {
+      "symbol": "INMF",
+      "name": null
+    },
+    {
+      "symbol": "JATM",
+      "name": null
+    },
+    {
+      "symbol": "JUBS",
+      "name": null
+    },
+    {
+      "symbol": "KAKL",
+      "name": null
+    },
+    {
+      "symbol": "KSTM",
+      "name": null
+    },
+    {
+      "symbol": "MFTM",
+      "name": null
+    },
+    {
+      "symbol": "MOHE",
+      "name": null
+    },
+    {
+      "symbol": "MUBT",
+      "name": null
+    },
+    {
+      "symbol": "NAFL",
+      "name": null
+    },
+    {
+      "symbol": "NCML",
+      "name": null
+    },
+    {
+      "symbol": "NINA",
+      "name": null
+    },
+    {
+      "symbol": "NMFL",
+      "name": null
+    },
+    {
+      "symbol": "PASL",
+      "name": null
+    },
+    {
+      "symbol": "PASM",
+      "name": null
+    },
+    {
+      "symbol": "PECO",
+      "name": null
+    },
+    {
+      "symbol": "PHDL",
+      "name": null
+    },
+    {
+      "symbol": "PICL",
+      "name": null
+    },
+    {
+      "symbol": "PIL",
+      "name": null
+    },
+    {
+      "symbol": "PPVC",
+      "name": null
+    },
+    {
+      "symbol": "PRIB",
+      "name": null
+    },
+    {
+      "symbol": "PRIC",
+      "name": null
+    },
+    {
+      "symbol": "PUDF",
+      "name": null
+    },
+    {
+      "symbol": "QTECH",
+      "name": null
+    },
+    {
+      "symbol": "QUET",
+      "name": null
+    },
+    {
+      "symbol": "REGAL",
+      "name": null
+    },
+    {
+      "symbol": "RUBY",
+      "name": null
+    },
+    {
+      "symbol": "SANE",
+      "name": null
+    },
+    {
+      "symbol": "SCHT",
+      "name": null
+    },
+    {
+      "symbol": "SDOT",
+      "name": null
+    },
+    {
+      "symbol": "SFAT",
+      "name": null
+    },
+    {
+      "symbol": "SGABL",
+      "name": null
+    },
+    {
+      "symbol": "SHCI",
+      "name": null
+    },
+    {
+      "symbol": "SKRS",
+      "name": null
+    },
+    {
+      "symbol": "SLCL",
+      "name": null
+    },
+    {
+      "symbol": "SLL",
+      "name": null
+    },
+    {
+      "symbol": "SLYT",
+      "name": null
+    },
+    {
+      "symbol": "SML",
+      "name": null
+    },
+    {
+      "symbol": "SPCL",
+      "name": null
+    },
+    {
+      "symbol": "SPL",
+      "name": null
+    },
+    {
+      "symbol": "SSIC",
+      "name": null
+    },
+    {
+      "symbol": "SSML",
+      "name": null
+    },
+    {
+      "symbol": "SUHJ",
+      "name": null
+    },
+    {
+      "symbol": "SURAJ",
+      "name": null
+    },
+    {
+      "symbol": "SWL",
+      "name": null
+    },
+    {
+      "symbol": "TAJT",
+      "name": null
+    },
+    {
+      "symbol": "TRIBL",
+      "name": null
+    },
+    {
+      "symbol": "USMT",
+      "name": null
+    },
+    {
+      "symbol": "ZELP",
+      "name": null
+    },
+    {
+      "symbol": "ZUMA",
+      "name": null
+    }
+  ],
+  "missing_in_db": [
+    {
+      "symbol": "MARI",
+      "exDate": "2010-10-27",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10%(FY10)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "PPL",
+      "exDate": "2004-03-02",
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "50%(ii)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "HUBC",
+      "exDate": "2025-10-06",
+      "jsonAmount": 10.0,
+      "jsonDividendStr": "100%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "PTC",
+      "exDate": "2014-02-18",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10%(CY13)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "AIRLINK",
+      "exDate": "2022-10-20",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "PABC",
+      "exDate": "2023-09-11",
+      "jsonAmount": 3.5,
+      "jsonDividendStr": "35%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "PABC",
+      "exDate": "2022-05-13",
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "15%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2025-09-04",
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2025-04-22",
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2024-09-05",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2024-04-19",
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2023-08-31",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2023-04-19",
+      "jsonAmount": 2.25,
+      "jsonDividendStr": "22.50%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2022-09-02",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2022-04-20",
+      "jsonAmount": 3.5,
+      "jsonDividendStr": "35%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2021-09-03",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2021-04-20",
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "50%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2020-05-12",
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2019-04-17",
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2018-11-09",
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "30%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2018-04-18",
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "40%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2018-02-21",
+      "jsonAmount": 8.0,
+      "jsonDividendStr": "80%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2016-04-08",
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "40%(CY15)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2015-09-30",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2015-04-09",
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "30%(CY14)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2014-04-10",
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "15%(CY13)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2013-04-11",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10%(CY12)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2012-09-14",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2011-05-13",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10% (i)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2011-04-14",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20% (CY 10)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IGIHL",
+      "exDate": "2010-09-21",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10% (ii)",
+      "dbFaceValue": 10.0
+    }
+  ],
+  "discrepancies": [
+    {
+      "symbol": "GLAXO",
+      "exDate": "2015-03-15",
+      "dbExDate": "2015-04-15",
+      "dateDiffDays": 31,
+      "amountDiff": 1.75,
+      "dbAmount": 3.25,
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "50%(CY14)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "SNGP",
+      "exDate": "2019-05-14",
+      "dbExDate": "2019-05-14",
+      "dateDiffDays": 0,
+      "amountDiff": 5.55,
+      "dbAmount": 7.05,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "15%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "SNGP",
+      "exDate": "2019-05-14",
+      "dbExDate": "2019-05-14",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 7.05,
+      "jsonAmount": 5.55,
+      "jsonDividendStr": "55.5%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "SNGP",
+      "exDate": "2017-11-17",
+      "dbExDate": "2017-11-17",
+      "dateDiffDays": 0,
+      "amountDiff": 6.0,
+      "dbAmount": 7.5,
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "15%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "SNGP",
+      "exDate": "2017-11-17",
+      "dbExDate": "2017-11-17",
+      "dateDiffDays": 0,
+      "amountDiff": 1.5,
+      "dbAmount": 7.5,
+      "jsonAmount": 6.0,
+      "jsonDividendStr": "60%",
+      "dbFaceValue": 10.0
+    }
+  ]
+}

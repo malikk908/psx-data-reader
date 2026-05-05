@@ -24,7 +24,7 @@ def connect_to_db():
     client = MongoClient(connection_string)
     return client[db_name]
 
-def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0, amount_tolerance: float = 0.0):
+def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0, amount_tolerance: float = 0.0, has_face_value: bool = False):
     db = connect_to_db()
     scraper = DividendScraper()
     
@@ -33,18 +33,25 @@ def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0
     stocks_collection = db['stocks']
     all_stocks = list(stocks_collection.find({"isActive": True}, {"symbol": 1, "faceValue": 1, "name": 1}))
     
-    missing_face_value_stocks = []
+    symbols_with_face_value = []
+    symbols_without_face_value = []
     face_values = {}
+    
     for stock in all_stocks:
         sym = stock.get('symbol')
         fv = stock.get('faceValue')
         if fv is None:
-            missing_face_value_stocks.append({
+            symbols_without_face_value.append({
                 "symbol": sym,
                 "name": stock.get('name')
             })
             face_values[sym] = 10.0
         else:
+            symbols_with_face_value.append({
+                "symbol": sym,
+                "name": stock.get('name'),
+                "faceValue": float(fv)
+            })
             face_values[sym] = float(fv)
 
     # 2. Load JSON records
@@ -85,15 +92,19 @@ def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0
         db_lookup[sym][ex_date_obj] = amount
 
     # 4. Compare
-    logger.info("Comparing records...")
+    logger.info(f"Comparing records (Mode: {'Has Face Value' if has_face_value else 'Missing Face Value'})...")
     missing_in_db = []
     discrepancies = []
     processed_count = 0
     skipped_count = 0
 
-    # Identify which symbols to audit (only those with missing faceValue)
-    symbols_to_audit = {s['symbol'] for s in missing_face_value_stocks}
-    logger.info(f"Symbols to audit (missing faceValue): {len(symbols_to_audit)}")
+    # Identify which symbols to audit
+    if has_face_value:
+        symbols_to_audit = {s['symbol'] for s in symbols_with_face_value}
+    else:
+        symbols_to_audit = {s['symbol'] for s in symbols_without_face_value}
+        
+    logger.info(f"Symbols to audit: {len(symbols_to_audit)}")
 
     for record in json_records:
         symbol = record.get('company_code') or record.get('_scraped_symbol')
@@ -123,11 +134,14 @@ def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0
             skipped_count += 1
             continue
             
-        # For these stocks, we assume face value of 10.0
-        assumed_face_value = 10.0
-        expected_amount = round((percentage / 100.0) * assumed_face_value, 4)
+        # Use either actual face value or assumed 10.0
+        # Wait, user instruction was to assume 10 for calculation? 
+        # But if we are auditing "Has Face Value" stocks, maybe we should use the actual one?
+        # Actually, let's keep it flexible. If has_face_value is True, use actual. If False, use 10.
+        calc_face_value = face_values.get(symbol, 10.0)
+        expected_amount = round((percentage / 100.0) * calc_face_value, 4)
         
-        actual_db_face_value = face_values.get(symbol) # This will be 10.0 per our logic above
+        actual_db_face_value = face_values.get(symbol)
 
         # Check in DB with date tolerance
         symbol_db_records = db_lookup.get(symbol, {})
@@ -177,16 +191,17 @@ def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0
     report = {
         "audit_timestamp": datetime.now().isoformat(),
         "summary": {
+            "mode": "has_face_value" if has_face_value else "missing_face_value",
             "total_json_records": len(json_records),
             "processed_records": processed_count,
             "skipped_records": skipped_count,
-            "missing_face_value_stocks_count": len(missing_face_value_stocks),
+            "audited_stocks_count": len(symbols_to_audit),
             "missing_in_db_count": len(missing_in_db),
             "discrepancies_count": len(discrepancies),
             "date_tolerance_days": day_tolerance,
             "amount_tolerance": amount_tolerance
         },
-        "missing_face_value_stocks": missing_face_value_stocks,
+        "audited_stocks": symbols_with_face_value if has_face_value else symbols_without_face_value,
         "missing_in_db": missing_in_db,
         "discrepancies": discrepancies
     }
@@ -206,8 +221,9 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=str, default="dividend_audit_report.json", help="Output report file")
     parser.add_argument("--tolerance", type=int, default=0, help="Day tolerance for exDate comparison")
     parser.add_argument("--amount-tolerance", type=float, default=0.0, help="Amount tolerance for discrepancy")
+    parser.add_argument("--has-face-value", action="store_true", help="Audit only stocks that HAVE a faceValue")
     args = parser.parse_args()
     
-    run_audit(args.json, args.out, args.tolerance, args.amount_tolerance)
+    run_audit(args.json, args.out, args.tolerance, args.amount_tolerance, args.has_face_value)
 
 # python3 src/psx/perform_dividend_audit.py --tolerance 32 --amount-tolerance 1.0
