@@ -1,14 +1,14 @@
 {
-  "audit_timestamp": "2026-05-05T15:29:11.471083",
+  "audit_timestamp": "2026-05-05T15:33:38.571591",
   "summary": {
     "mode": "has_face_value",
     "total_json_records": 3622,
     "processed_records": 228,
     "skipped_records": 167,
     "audited_stocks_count": 20,
-    "missing_in_db_count": 10,
-    "discrepancies_count": 143,
-    "date_tolerance_days": 32,
+    "missing_in_db_count": 16,
+    "discrepancies_count": 139,
+    "date_tolerance_days": 7,
     "amount_tolerance": 1.0
   },
   "audited_stocks": [
@@ -115,6 +115,41 @@
   ],
   "missing_in_db": [
     {
+      "symbol": "UBL",
+      "exDate": "2016-03-25",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "40%(CY15)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "UBL",
+      "exDate": "2010-08-29",
+      "jsonAmount": 0.5,
+      "jsonDividendStr": "10% (ii)",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "LCI",
+      "exDate": "2010-09-23",
+      "jsonAmount": 1.1,
+      "jsonDividendStr": "55%",
+      "dbFaceValue": 2.0
+    },
+    {
+      "symbol": "NATF",
+      "exDate": "2025-10-09",
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "100%",
+      "dbFaceValue": 5.0
+    },
+    {
+      "symbol": "KOHC",
+      "exDate": "2013-10-11",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "50%(FY13)",
+      "dbFaceValue": 2.0
+    },
+    {
       "symbol": "AHCL",
       "exDate": "2024-11-11",
       "jsonAmount": 0.7,
@@ -183,6 +218,13 @@
       "jsonAmount": 0.3,
       "jsonDividendStr": "30% (specie dividend 3 shares of FFCL for every 10",
       "dbFaceValue": 1.0
+    },
+    {
+      "symbol": "THALL",
+      "exDate": "2010-10-29",
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "60% (FY10)",
+      "dbFaceValue": 5.0
     }
   ],
   "discrepancies": [
@@ -569,17 +611,6 @@
       "dbAmount": 3,
       "jsonAmount": 1.5,
       "jsonDividendStr": "30%",
-      "dbFaceValue": 5.0
-    },
-    {
-      "symbol": "UBL",
-      "exDate": "2016-03-25",
-      "dbExDate": "2016-03-16",
-      "dateDiffDays": 9,
-      "amountDiff": 2.0,
-      "dbAmount": 4,
-      "jsonAmount": 2.0,
-      "jsonDividendStr": "40%(CY15)",
       "dbFaceValue": 5.0
     },
     {
@@ -1276,17 +1307,6 @@
       "dbFaceValue": 2.0
     },
     {
-      "symbol": "LCI",
-      "exDate": "2010-09-23",
-      "dbExDate": "2010-09-14",
-      "dateDiffDays": 9,
-      "amountDiff": 4.4,
-      "dbAmount": 5.5,
-      "jsonAmount": 1.1,
-      "jsonDividendStr": "55%",
-      "dbFaceValue": 2.0
-    },
-    {
       "symbol": "BAFL",
       "exDate": "2026-03-16",
       "dbExDate": "2026-03-16",
@@ -1508,17 +1528,6 @@
     },
     {
       "symbol": "NATF",
-      "exDate": "2025-10-09",
-      "dbExDate": "2025-10-30",
-      "dateDiffDays": 21,
-      "amountDiff": 13.0,
-      "dbAmount": 18,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "100%",
-      "dbFaceValue": 5.0
-    },
-    {
-      "symbol": "NATF",
       "exDate": "2014-10-10",
       "dbExDate": "2014-10-10",
       "dateDiffDays": 0,
@@ -1658,17 +1667,6 @@
       "dbAmount": 2,
       "jsonAmount": 0.4,
       "jsonDividendStr": "20%(FY14)",
-      "dbFaceValue": 2.0
-    },
-    {
-      "symbol": "KOHC",
-      "exDate": "2013-10-11",
-      "dbExDate": "2013-10-22",
-      "dateDiffDays": 11,
-      "amountDiff": 4.0,
-      "dbAmount": 5,
-      "jsonAmount": 1.0,
-      "jsonDividendStr": "50%(FY13)",
       "dbFaceValue": 2.0
     },
     {
