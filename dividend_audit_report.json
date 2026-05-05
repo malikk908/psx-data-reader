@@ -1,13 +1,13 @@
 {
-  "audit_timestamp": "2026-05-05T12:44:29.229337",
+  "audit_timestamp": "2026-05-05T12:58:21.672534",
   "summary": {
     "total_json_records": 3622,
     "processed_records": 1813,
     "skipped_records": 1456,
     "missing_face_value_stocks_count": 538,
-    "missing_in_db_count": 47,
-    "discrepancies_count": 36,
-    "date_tolerance_days": 32,
+    "missing_in_db_count": 54,
+    "discrepancies_count": 33,
+    "date_tolerance_days": 16,
     "amount_tolerance": 1.0
   },
   "missing_face_value_stocks": [
@@ -2166,6 +2166,20 @@
   ],
   "missing_in_db": [
     {
+      "symbol": "OGDC",
+      "exDate": "2014-11-15",
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "MARI",
+      "exDate": "2016-08-19",
+      "jsonAmount": 2.1,
+      "jsonDividendStr": "21%(FY16)",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "MARI",
       "exDate": "2010-10-27",
       "jsonAmount": 1.0,
@@ -2180,6 +2194,27 @@
       "dbFaceValue": 10.0
     },
     {
+      "symbol": "PAKT",
+      "exDate": "2025-10-02",
+      "jsonAmount": 30.0,
+      "jsonDividendStr": "300%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "PAKT",
+      "exDate": "2015-10-17",
+      "jsonAmount": 6.0,
+      "jsonDividendStr": "60%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "ENGROH",
+      "exDate": "2011-02-24",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10% (CY10)",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "HUBC",
       "exDate": "2025-10-06",
       "jsonAmount": 10.0,
@@ -2187,10 +2222,10 @@
       "dbFaceValue": 10.0
     },
     {
-      "symbol": "FATIMA",
-      "exDate": "2025-09-05",
-      "jsonAmount": 3.5,
-      "jsonDividendStr": "35%",
+      "symbol": "EFERT",
+      "exDate": "2016-08-16",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20%",
       "dbFaceValue": 10.0
     },
     {
@@ -2198,13 +2233,6 @@
       "exDate": "2014-02-18",
       "jsonAmount": 1.0,
       "jsonDividendStr": "10%(CY13)",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "BAHL",
-      "exDate": "2025-09-03",
-      "jsonAmount": 3.5,
-      "jsonDividendStr": "35%",
       "dbFaceValue": 10.0
     },
     {
@@ -2250,6 +2278,20 @@
       "dbFaceValue": 10.0
     },
     {
+      "symbol": "GLAXO",
+      "exDate": "2015-03-15",
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "50%(CY14)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "ABOT",
+      "exDate": "2010-08-23",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20% (ii)",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "RMPL",
       "exDate": "2025-09-05",
       "jsonAmount": 100.0,
@@ -2261,6 +2303,13 @@
       "exDate": "2025-10-13",
       "jsonAmount": 2.0,
       "jsonDividendStr": "20%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "AIRLINK",
+      "exDate": "2025-10-14",
+      "jsonAmount": 4.5,
+      "jsonDividendStr": "45%",
       "dbFaceValue": 10.0
     },
     {
@@ -2497,28 +2546,6 @@
   ],
   "discrepancies": [
     {
-      "symbol": "PAKT",
-      "exDate": "2025-10-02",
-      "dbExDate": "2025-10-30",
-      "dateDiffDays": 28,
-      "amountDiff": 10.0,
-      "dbAmount": 20,
-      "jsonAmount": 30.0,
-      "jsonDividendStr": "300%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "GLAXO",
-      "exDate": "2015-03-15",
-      "dbExDate": "2015-04-15",
-      "dateDiffDays": 31,
-      "amountDiff": 1.75,
-      "dbAmount": 3.25,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%(CY14)",
-      "dbFaceValue": 10.0
-    },
-    {
       "symbol": "SNGP",
       "exDate": "2019-05-14",
       "dbExDate": "2019-05-14",
@@ -2560,17 +2587,6 @@
       "dbAmount": 7.5,
       "jsonAmount": 6.0,
       "jsonDividendStr": "60%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "AIRLINK",
-      "exDate": "2025-10-14",
-      "dbExDate": "2025-10-31",
-      "dateDiffDays": 17,
-      "amountDiff": 2.5,
-      "dbAmount": 2,
-      "jsonAmount": 4.5,
-      "jsonDividendStr": "45%",
       "dbFaceValue": 10.0
     },
     {
