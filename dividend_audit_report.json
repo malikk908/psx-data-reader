@@ -1,13 +1,13 @@
 {
-  "audit_timestamp": "2026-05-05T12:58:21.672534",
+  "audit_timestamp": "2026-05-05T15:18:30.726844",
   "summary": {
     "total_json_records": 3622,
-    "processed_records": 1813,
-    "skipped_records": 1456,
-    "missing_face_value_stocks_count": 538,
-    "missing_in_db_count": 54,
-    "discrepancies_count": 33,
-    "date_tolerance_days": 16,
+    "processed_records": 1783,
+    "skipped_records": 1444,
+    "missing_face_value_stocks_count": 537,
+    "missing_in_db_count": 71,
+    "discrepancies_count": 4,
+    "date_tolerance_days": 7,
     "amount_tolerance": 1.0
   },
   "missing_face_value_stocks": [
@@ -1268,10 +1268,6 @@
       "name": null
     },
     {
-      "symbol": "THALL",
-      "name": null
-    },
-    {
       "symbol": "UDPL",
       "name": null
     },
@@ -2173,6 +2169,13 @@
       "dbFaceValue": 10.0
     },
     {
+      "symbol": "OGDC",
+      "exDate": "2010-10-01",
+      "jsonAmount": 1.5,
+      "jsonDividendStr": "15% (FY)",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "MARI",
       "exDate": "2016-08-19",
       "jsonAmount": 2.1,
@@ -2187,10 +2190,31 @@
       "dbFaceValue": 10.0
     },
     {
+      "symbol": "FFC",
+      "exDate": "2010-09-06",
+      "jsonAmount": 3.5,
+      "jsonDividendStr": "35% (ii)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "PPL",
+      "exDate": "2010-09-30",
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "50% (FY)",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "PPL",
       "exDate": "2004-03-02",
       "jsonAmount": 5.0,
       "jsonDividendStr": "50%(ii)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "MCB",
+      "exDate": "2010-09-16",
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "30% (ii)",
       "dbFaceValue": 10.0
     },
     {
@@ -2202,9 +2226,23 @@
     },
     {
       "symbol": "PAKT",
+      "exDate": "2020-04-16",
+      "jsonAmount": 23.0,
+      "jsonDividendStr": "230%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "PAKT",
       "exDate": "2015-10-17",
       "jsonAmount": 6.0,
       "jsonDividendStr": "60%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "NESTLE",
+      "exDate": "2010-09-17",
+      "jsonAmount": 20.0,
+      "jsonDividendStr": "200% (ii)",
       "dbFaceValue": 10.0
     },
     {
@@ -2215,10 +2253,38 @@
       "dbFaceValue": 10.0
     },
     {
+      "symbol": "ENGROH",
+      "exDate": "2010-08-31",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20% (ii)",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "HUBC",
       "exDate": "2025-10-06",
       "jsonAmount": 10.0,
       "jsonDividendStr": "100%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "HUBC",
+      "exDate": "2010-08-23",
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "25% (FY)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "COLG",
+      "exDate": "2016-09-21",
+      "jsonAmount": 30.0,
+      "jsonDividendStr": "300%(FY16)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "COLG",
+      "exDate": "2010-09-03",
+      "jsonAmount": 13.5,
+      "jsonDividendStr": "135% (FY)",
       "dbFaceValue": 10.0
     },
     {
@@ -2229,6 +2295,27 @@
       "dbFaceValue": 10.0
     },
     {
+      "symbol": "BWCL",
+      "exDate": "2014-09-23",
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "25%(FY14)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "ABL",
+      "exDate": "2010-09-03",
+      "jsonAmount": 2.0,
+      "jsonDividendStr": "20% (ii)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "POL",
+      "exDate": "2010-10-29",
+      "jsonAmount": 17.5,
+      "jsonDividendStr": "175% (FY10)",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "PTC",
       "exDate": "2014-02-18",
       "jsonAmount": 1.0,
@@ -2236,45 +2323,38 @@
       "dbFaceValue": 10.0
     },
     {
+      "symbol": "BAHL",
+      "exDate": "2019-03-05",
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 10.0
+    },
+    {
       "symbol": "INDU",
-      "exDate": "2025-10-01",
-      "jsonAmount": 50.0,
-      "jsonDividendStr": "500%",
+      "exDate": "2010-10-01",
+      "jsonAmount": 10.0,
+      "jsonDividendStr": "100% (FY)",
       "dbFaceValue": 10.0
     },
     {
-      "symbol": "FABL",
-      "exDate": "2025-09-09",
-      "jsonAmount": 1.5,
-      "jsonDividendStr": "15%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "ISIL",
-      "exDate": "2025-09-30",
+      "symbol": "PSO",
+      "exDate": "2010-09-30",
       "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
+      "jsonDividendStr": "50% (FY)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "UPFL",
+      "exDate": "2010-09-30",
+      "jsonAmount": 35.0,
+      "jsonDividendStr": "350%",
       "dbFaceValue": 10.0
     },
     {
       "symbol": "SAZEW",
-      "exDate": "2025-09-17",
-      "jsonAmount": 20.0,
-      "jsonDividendStr": "200%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "ILP",
-      "exDate": "2025-10-01",
+      "exDate": "2010-10-23",
       "jsonAmount": 1.0,
-      "jsonDividendStr": "10%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "BOP",
-      "exDate": "2025-09-10",
-      "jsonAmount": 1.0,
-      "jsonDividendStr": "10%",
+      "jsonDividendStr": "10% (FY)",
       "dbFaceValue": 10.0
     },
     {
@@ -2282,6 +2362,13 @@
       "exDate": "2015-03-15",
       "jsonAmount": 5.0,
       "jsonDividendStr": "50%(CY14)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "ATRL",
+      "exDate": "2016-09-09",
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "50%",
       "dbFaceValue": 10.0
     },
     {
@@ -2293,37 +2380,30 @@
     },
     {
       "symbol": "RMPL",
-      "exDate": "2025-09-05",
-      "jsonAmount": 100.0,
-      "jsonDividendStr": "1000%",
+      "exDate": "2010-08-22",
+      "jsonAmount": 25.0,
+      "jsonDividendStr": "250% (ii)",
       "dbFaceValue": 10.0
     },
     {
-      "symbol": "DGKC",
-      "exDate": "2025-10-13",
+      "symbol": "APL",
+      "exDate": "2016-09-09",
+      "jsonAmount": 25.0,
+      "jsonDividendStr": "250%(FY16)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "APL",
+      "exDate": "2010-10-29",
+      "jsonAmount": 20.0,
+      "jsonDividendStr": "200% (FY10)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "IBFL",
+      "exDate": "2010-11-02",
       "jsonAmount": 2.0,
-      "jsonDividendStr": "20%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "AIRLINK",
-      "exDate": "2025-10-14",
-      "jsonAmount": 4.5,
-      "jsonDividendStr": "45%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "AIRLINK",
-      "exDate": "2024-02-07",
-      "jsonAmount": 2.0,
-      "jsonDividendStr": "20%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "AIRLINK",
-      "exDate": "2023-11-18",
-      "jsonAmount": 2.5,
-      "jsonDividendStr": "25%",
+      "jsonDividendStr": "20% (FY10)",
       "dbFaceValue": 10.0
     },
     {
@@ -2334,31 +2414,31 @@
       "dbFaceValue": 10.0
     },
     {
-      "symbol": "AIRLINK",
-      "exDate": "2021-10-20",
-      "jsonAmount": 1.25,
-      "jsonDividendStr": "12.50%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "AGP",
-      "exDate": "2025-09-02",
-      "jsonAmount": 2.0,
-      "jsonDividendStr": "20%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2025-10-10",
-      "jsonAmount": 12.0,
-      "jsonDividendStr": "120%",
+      "symbol": "SEARL",
+      "exDate": "2010-10-27",
+      "jsonAmount": 3.0,
+      "jsonDividendStr": "30% (FY10)",
       "dbFaceValue": 10.0
     },
     {
       "symbol": "JVDC",
-      "exDate": "2025-10-08",
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
+      "exDate": "2017-11-17",
+      "jsonAmount": 2.5,
+      "jsonDividendStr": "25%",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "WAFI",
+      "exDate": "2010-10-01",
+      "jsonAmount": 4.0,
+      "jsonDividendStr": "40% (ii)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "FFL",
+      "exDate": "2010-11-02",
+      "jsonAmount": 1.2,
+      "jsonDividendStr": "12% (FY10)",
       "dbFaceValue": 10.0
     },
     {
@@ -2542,6 +2622,41 @@
       "jsonAmount": 1.0,
       "jsonDividendStr": "10% (ii)",
       "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "ACPL",
+      "exDate": "2016-10-05",
+      "jsonAmount": 12.5,
+      "jsonDividendStr": "125%(FY16)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "ACPL",
+      "exDate": "2010-10-28",
+      "jsonAmount": 3.25,
+      "jsonDividendStr": "32.50% (FY10)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "NRL",
+      "exDate": "2010-10-28",
+      "jsonAmount": 20.0,
+      "jsonDividendStr": "200% (FY10)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "SAPT",
+      "exDate": "2010-10-29",
+      "jsonAmount": 5.0,
+      "jsonDividendStr": "50% (FY10)",
+      "dbFaceValue": 10.0
+    },
+    {
+      "symbol": "TGL",
+      "exDate": "2010-09-01",
+      "jsonAmount": 1.0,
+      "jsonDividendStr": "10% (FY)",
+      "dbFaceValue": 10.0
     }
   ],
   "discrepancies": [
@@ -2587,325 +2702,6 @@
       "dbAmount": 7.5,
       "jsonAmount": 6.0,
       "jsonDividendStr": "60%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2026-02-20",
-      "dbExDate": "2026-02-20",
-      "dateDiffDays": 0,
-      "amountDiff": 15.0,
-      "dbAmount": 15,
-      "jsonAmount": 30.0,
-      "jsonDividendStr": "300%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2025-03-07",
-      "dbExDate": "2025-03-07",
-      "dateDiffDays": 0,
-      "amountDiff": 4.0,
-      "dbAmount": 4,
-      "jsonAmount": 8.0,
-      "jsonDividendStr": "80%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2024-10-15",
-      "dbExDate": "2024-10-15",
-      "dateDiffDays": 0,
-      "amountDiff": 6.0,
-      "dbAmount": 6,
-      "jsonAmount": 12.0,
-      "jsonDividendStr": "120%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2024-03-07",
-      "dbExDate": "2024-03-07",
-      "dateDiffDays": 0,
-      "amountDiff": 2.0,
-      "dbAmount": 2,
-      "jsonAmount": 4.0,
-      "jsonDividendStr": "40%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2023-10-13",
-      "dbExDate": "2023-10-13",
-      "dateDiffDays": 0,
-      "amountDiff": 6.5,
-      "dbAmount": 6.5,
-      "jsonAmount": 13.0,
-      "jsonDividendStr": "130%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2023-03-06",
-      "dbExDate": "2023-03-06",
-      "dateDiffDays": 0,
-      "amountDiff": 1.5,
-      "dbAmount": 1.5,
-      "jsonAmount": 3.0,
-      "jsonDividendStr": "30%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2022-10-12",
-      "dbExDate": "2022-10-12",
-      "dateDiffDays": 0,
-      "amountDiff": 2.5,
-      "dbAmount": 2.5,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2022-03-07",
-      "dbExDate": "2022-03-07",
-      "dateDiffDays": 0,
-      "amountDiff": 5.0,
-      "dbAmount": 5,
-      "jsonAmount": 10.0,
-      "jsonDividendStr": "100%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2021-10-04",
-      "dbExDate": "2021-10-04",
-      "dateDiffDays": 0,
-      "amountDiff": 6.0,
-      "dbAmount": 6,
-      "jsonAmount": 12.0,
-      "jsonDividendStr": "120%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2021-03-11",
-      "dbExDate": "2021-03-11",
-      "dateDiffDays": 0,
-      "amountDiff": 4.0,
-      "dbAmount": 4,
-      "jsonAmount": 8.0,
-      "jsonDividendStr": "80%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2020-10-14",
-      "dbExDate": "2020-10-14",
-      "dateDiffDays": 0,
-      "amountDiff": 3.5,
-      "dbAmount": 3.5,
-      "jsonAmount": 7.0,
-      "jsonDividendStr": "70%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2020-03-11",
-      "dbExDate": "2020-03-11",
-      "dateDiffDays": 0,
-      "amountDiff": 1.5,
-      "dbAmount": 1.5,
-      "jsonAmount": 3.0,
-      "jsonDividendStr": "30%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2019-10-17",
-      "dbExDate": "2019-10-17",
-      "dateDiffDays": 0,
-      "amountDiff": 5.5,
-      "dbAmount": 5.5,
-      "jsonAmount": 11.0,
-      "jsonDividendStr": "110%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2019-03-12",
-      "dbExDate": "2019-03-12",
-      "dateDiffDays": 0,
-      "amountDiff": 2.5,
-      "dbAmount": 2.5,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2018-10-11",
-      "dbExDate": "2018-10-11",
-      "dateDiffDays": 0,
-      "amountDiff": 8.5,
-      "dbAmount": 8.5,
-      "jsonAmount": 17.0,
-      "jsonDividendStr": "170%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2018-05-08",
-      "dbExDate": "2018-05-08",
-      "dateDiffDays": 0,
-      "amountDiff": 2.5,
-      "dbAmount": 2.5,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2017-09-28",
-      "dbExDate": "2017-09-28",
-      "dateDiffDays": 0,
-      "amountDiff": 16.0,
-      "dbAmount": 16,
-      "jsonAmount": 32.0,
-      "jsonDividendStr": "320%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2017-03-10",
-      "dbExDate": "2017-03-10",
-      "dateDiffDays": 0,
-      "amountDiff": 3.75,
-      "dbAmount": 3.75,
-      "jsonAmount": 7.5,
-      "jsonDividendStr": "75%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2016-09-20",
-      "dbExDate": "2016-09-20",
-      "dateDiffDays": 0,
-      "amountDiff": 6.25,
-      "dbAmount": 6.25,
-      "jsonAmount": 12.5,
-      "jsonDividendStr": "125%(FY16)",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2016-03-11",
-      "dbExDate": "2016-03-11",
-      "dateDiffDays": 0,
-      "amountDiff": 3.75,
-      "dbAmount": 3.75,
-      "jsonAmount": 7.5,
-      "jsonDividendStr": "75%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2015-09-28",
-      "dbExDate": "2015-09-28",
-      "dateDiffDays": 0,
-      "amountDiff": 5.0,
-      "dbAmount": 5,
-      "jsonAmount": 10.0,
-      "jsonDividendStr": "100%(FY15)",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2015-05-22",
-      "dbExDate": "2015-05-22",
-      "dateDiffDays": 0,
-      "amountDiff": 3.75,
-      "dbAmount": 3.75,
-      "jsonAmount": 7.5,
-      "jsonDividendStr": "75%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2015-03-17",
-      "dbExDate": "2015-03-17",
-      "dateDiffDays": 0,
-      "amountDiff": 3.75,
-      "dbAmount": 3.75,
-      "jsonAmount": 7.5,
-      "jsonDividendStr": "75%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2014-09-19",
-      "dbExDate": "2014-09-19",
-      "dateDiffDays": 0,
-      "amountDiff": 2.5,
-      "dbAmount": 2.5,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%(FY14)",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2014-05-09",
-      "dbExDate": "2014-05-09",
-      "dateDiffDays": 0,
-      "amountDiff": 2.5,
-      "dbAmount": 2.5,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2014-03-07",
-      "dbExDate": "2014-03-07",
-      "dateDiffDays": 0,
-      "amountDiff": 2.5,
-      "dbAmount": 2.5,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2013-03-18",
-      "dbExDate": "2013-03-18",
-      "dateDiffDays": 0,
-      "amountDiff": 2.5,
-      "dbAmount": 2.5,
-      "jsonAmount": 5.0,
-      "jsonDividendStr": "50%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2012-03-08",
-      "dbExDate": "2012-03-08",
-      "dateDiffDays": 0,
-      "amountDiff": 1.25,
-      "dbAmount": 1.25,
-      "jsonAmount": 2.5,
-      "jsonDividendStr": "25%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "THALL",
-      "exDate": "2010-10-29",
-      "dbExDate": "2010-10-21",
-      "dateDiffDays": 8,
-      "amountDiff": 3.0,
-      "dbAmount": 3,
-      "jsonAmount": 6.0,
-      "jsonDividendStr": "60% (FY10)",
       "dbFaceValue": 10.0
     }
   ]
