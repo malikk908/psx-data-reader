@@ -179,3 +179,5 @@ if __name__ == "__main__":
 
 # source .venv/bin/activate
 # python src/psx/dividend_cron.py
+
+# python -m psx.dividend_cron

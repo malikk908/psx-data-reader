@@ -209,3 +209,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     run_audit(args.json, args.out, args.tolerance, args.amount_tolerance)
+
+# python3 src/psx/perform_dividend_audit.py --tolerance 32 --amount-tolerance 1.0
