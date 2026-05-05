@@ -24,7 +24,7 @@ def connect_to_db():
     client = MongoClient(connection_string)
     return client[db_name]
 
-def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0):
+def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0, amount_tolerance: float = 0.0):
     db = connect_to_db()
     scraper = DividendScraper()
     
@@ -155,12 +155,16 @@ def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0
             })
         else:
             db_amount = symbol_db_records[best_match_date]
-            if abs(db_amount - expected_amount) > 0.0001:
+            amount_diff = abs(db_amount - expected_amount)
+            
+            # Use amount_tolerance to ignore minor discrepancies
+            if amount_diff >= amount_tolerance:
                 discrepancies.append({
                     "symbol": symbol,
                     "exDate": ex_date_iso,
                     "dbExDate": best_match_date.strftime("%Y-%m-%d"),
                     "dateDiffDays": min_diff,
+                    "amountDiff": round(amount_diff, 4),
                     "dbAmount": db_amount,
                     "jsonAmount": expected_amount,
                     "jsonDividendStr": dividend_str,
@@ -178,7 +182,9 @@ def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0
             "skipped_records": skipped_count,
             "missing_face_value_stocks_count": len(missing_face_value_stocks),
             "missing_in_db_count": len(missing_in_db),
-            "discrepancies_count": len(discrepancies)
+            "discrepancies_count": len(discrepancies),
+            "date_tolerance_days": day_tolerance,
+            "amount_tolerance": amount_tolerance
         },
         "missing_face_value_stocks": missing_face_value_stocks,
         "missing_in_db": missing_in_db,
@@ -199,6 +205,7 @@ if __name__ == "__main__":
     parser.add_argument("--json", type=str, default="historical_dividends_audit.json", help="Source JSON file")
     parser.add_argument("--out", type=str, default="dividend_audit_report.json", help="Output report file")
     parser.add_argument("--tolerance", type=int, default=0, help="Day tolerance for exDate comparison")
+    parser.add_argument("--amount-tolerance", type=float, default=0.0, help="Amount tolerance for discrepancy")
     args = parser.parse_args()
     
-    run_audit(args.json, args.out, args.tolerance)
+    run_audit(args.json, args.out, args.tolerance, args.amount_tolerance)
