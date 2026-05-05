@@ -24,7 +24,7 @@ def connect_to_db():
     client = MongoClient(connection_string)
     return client[db_name]
 
-def run_audit(json_file_path: str, output_file_path: str):
+def run_audit(json_file_path: str, output_file_path: str, day_tolerance: int = 0):
     db = connect_to_db()
     scraper = DividendScraper()
     
@@ -61,20 +61,28 @@ def run_audit(json_file_path: str, output_file_path: str):
     dividend_collection = db['dividendannouncements']
     db_dividends = list(dividend_collection.find({}, {"symbol": 1, "exDate": 1, "amountPerShare": 1}))
     
-    # Organize DB records for quick lookup: { (symbol, date_str): amount }
+    # Organize DB records for quick lookup: { symbol: { date_obj: amount } }
     db_lookup = {}
     for div in db_dividends:
         sym = div.get('symbol')
         ex_date = div.get('exDate')
+        
+        # Parse/Normalize date to datetime object (midnight)
         if isinstance(ex_date, datetime):
-            date_str = ex_date.strftime("%Y-%m-%d")
+            ex_date_obj = ex_date.replace(hour=0, minute=0, second=0, microsecond=0)
         elif isinstance(ex_date, str):
-            date_str = ex_date[:10] # Assume ISO string
+            try:
+                # Handle ISO format strings
+                ex_date_obj = datetime.fromisoformat(ex_date.replace('Z', '+00:00')).replace(hour=0, minute=0, second=0, microsecond=0)
+            except ValueError:
+                continue
         else:
             continue
             
         amount = div.get('amountPerShare', 0)
-        db_lookup[(sym, date_str)] = amount
+        if sym not in db_lookup:
+            db_lookup[sym] = {}
+        db_lookup[sym][ex_date_obj] = amount
 
     # 4. Compare
     logger.info("Comparing records...")
@@ -121,10 +129,23 @@ def run_audit(json_file_path: str, output_file_path: str):
         
         actual_db_face_value = face_values.get(symbol) # This will be 10.0 per our logic above
 
-        # Check in DB
-        db_pair = db_lookup.get((symbol, ex_date_iso))
+        # Check in DB with date tolerance
+        symbol_db_records = db_lookup.get(symbol, {})
         
-        if db_pair is None:
+        # Look for a record within tolerance
+        best_match_date = None
+        min_diff = float('inf')
+        
+        # Normalize JSON ex_date_obj to midnight for comparison
+        ex_date_normalized = ex_date_obj.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        for db_date in symbol_db_records.keys():
+            diff = abs((db_date - ex_date_normalized).days)
+            if diff <= day_tolerance and diff < min_diff:
+                min_diff = diff
+                best_match_date = db_date
+        
+        if best_match_date is None:
             missing_in_db.append({
                 "symbol": symbol,
                 "exDate": ex_date_iso,
@@ -133,11 +154,13 @@ def run_audit(json_file_path: str, output_file_path: str):
                 "dbFaceValue": actual_db_face_value
             })
         else:
-            db_amount = db_pair
+            db_amount = symbol_db_records[best_match_date]
             if abs(db_amount - expected_amount) > 0.0001:
                 discrepancies.append({
                     "symbol": symbol,
                     "exDate": ex_date_iso,
+                    "dbExDate": best_match_date.strftime("%Y-%m-%d"),
+                    "dateDiffDays": min_diff,
                     "dbAmount": db_amount,
                     "jsonAmount": expected_amount,
                     "jsonDividendStr": dividend_str,
@@ -175,6 +198,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run dividend audit")
     parser.add_argument("--json", type=str, default="historical_dividends_audit.json", help="Source JSON file")
     parser.add_argument("--out", type=str, default="dividend_audit_report.json", help="Output report file")
+    parser.add_argument("--tolerance", type=int, default=0, help="Day tolerance for exDate comparison")
     args = parser.parse_args()
     
-    run_audit(args.json, args.out)
+    run_audit(args.json, args.out, args.tolerance)
