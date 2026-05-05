@@ -1,11 +1,11 @@
 {
-  "audit_timestamp": "2026-05-05T12:28:50.764109",
+  "audit_timestamp": "2026-05-05T12:44:29.229337",
   "summary": {
     "total_json_records": 3622,
     "processed_records": 1813,
     "skipped_records": 1456,
     "missing_face_value_stocks_count": 538,
-    "missing_in_db_count": 48,
+    "missing_in_db_count": 47,
     "discrepancies_count": 36,
     "date_tolerance_days": 32,
     "amount_tolerance": 1.0
@@ -2191,13 +2191,6 @@
       "exDate": "2025-09-05",
       "jsonAmount": 3.5,
       "jsonDividendStr": "35%",
-      "dbFaceValue": 10.0
-    },
-    {
-      "symbol": "ATLH",
-      "exDate": "2026-06-15",
-      "jsonAmount": 56.0,
-      "jsonDividendStr": "560%",
       "dbFaceValue": 10.0
     },
     {
