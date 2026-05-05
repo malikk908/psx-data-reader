@@ -226,4 +226,6 @@ if __name__ == "__main__":
     
     run_audit(args.json, args.out, args.tolerance, args.amount_tolerance, args.has_face_value)
 
-# python3 src/psx/perform_dividend_audit.py --tolerance 32 --amount-tolerance 1.0
+# python3 src/psx/perform_dividend_audit.py --tolerance 7 --amount-tolerance 1.0
+
+# python3 src/psx/perform_dividend_audit.py --tolerance 7 --amount-tolerance 1.0 --out dividend_audit_missing_facevalue_report.json
