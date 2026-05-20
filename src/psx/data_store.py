@@ -75,8 +75,9 @@ def dataframe_to_documents(df, symbol):
 def save_to_mongodb(df, symbol, connection_string="mongodb://localhost:27017/",
                    db_name="finhisaab", collection_name="psxstockpricedata"):
     """
-    Save stock data to MongoDB using insert-only strategy.
-    Duplicates (same symbol + date) are silently ignored due to unique index.
+    Save stock data to MongoDB using an upsert strategy.
+    If a record with the same (symbol, date) already exists it is updated with
+    the latest scraped values; otherwise a new document is inserted.
 
     Args:
         df (pandas.DataFrame): DataFrame containing stock data
@@ -99,42 +100,47 @@ def save_to_mongodb(df, symbol, connection_string="mongodb://localhost:27017/",
         if not documents:
             return False, "No documents to insert"
 
-        # Create a unique index on symbol and date to prevent duplicates
+        # Ensure a unique index on (symbol, date).
+        # Upserts (UpdateOne) work fine with unique indexes — only raw InsertOne
+        # operations raise duplicate-key errors, which we no longer use.
         collection.create_index(
             [("symbol", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
             unique=True
         )
 
-        # Add timestamps to all documents
+        # Build upsert operations — match on (symbol, date), overwrite all fields
         current_time = datetime.now()
+        operations = []
         for doc in documents:
-            doc["createdAt"] = current_time
-            doc["updatedAt"] = current_time
+            filter_keys = {"symbol": doc["symbol"], "date": doc["date"]}
+            update_fields = {k: v for k, v in doc.items() if k not in ("symbol", "date")}
+            update_fields["updatedAt"] = current_time
+            set_on_insert = {"createdAt": current_time}
 
-        # Use bulk insert with ordered=False to continue on duplicate key errors
-        operations = [pymongo.InsertOne(doc) for doc in documents]
+            operations.append(
+                pymongo.UpdateOne(
+                    filter_keys,
+                    {
+                        "$set": update_fields,
+                        "$setOnInsert": set_on_insert,
+                    },
+                    upsert=True,
+                )
+            )
 
-        try:
-            result = collection.bulk_write(operations, ordered=False)
-            inserted_count = result.inserted_count
-        except pymongo.errors.BulkWriteError as bwe:
-            # Extract successful inserts from the error
-            inserted_count = bwe.details.get('nInserted', 0)
-            # Silently ignore duplicate key errors (error code 11000)
-            write_errors = bwe.details.get('writeErrors', [])
-            duplicate_errors = [e for e in write_errors if e.get('code') == 11000]
-            other_errors = [e for e in write_errors if e.get('code') != 11000]
+        result = collection.bulk_write(operations, ordered=False)
+        inserted_count = result.upserted_count
+        updated_count = result.modified_count
 
-            if other_errors:
-                # Log non-duplicate errors
-                logger.warning(f"Non-duplicate errors during insert: {other_errors}")
+        logger.info(
+            f"MongoDB upsert completed for {symbol}: "
+            f"{inserted_count} inserted, {updated_count} updated"
+        )
 
-            logger.info(f"MongoDB insert completed: {inserted_count} inserted, "
-                       f"{len(duplicate_errors)} duplicates skipped")
-
-        logger.info(f"MongoDB operation completed: {inserted_count} inserted")
-
-        return True, f"Successfully processed {len(documents)} documents for {symbol} ({inserted_count} new, {len(documents) - inserted_count} duplicates skipped)"
+        return True, (
+            f"Successfully processed {len(documents)} documents for {symbol} "
+            f"({inserted_count} new, {updated_count} updated)"
+        )
 
     except Exception as e:
         error_msg = f"Error saving data to MongoDB: {str(e)}"
