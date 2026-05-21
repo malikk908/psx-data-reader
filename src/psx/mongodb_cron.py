@@ -86,103 +86,100 @@ def get_stock_symbols_range(connection_string, db_name, start_rank=1, end_rank=N
             client.close()
 
 def main():
+    parser = argparse.ArgumentParser(description="PSX daily data fetch cron job.")
+    parser.add_argument(
+        "--start", type=int, default=1,
+        help="1-based start rank in market-cap-sorted stock list (default: 1)"
+    )
+    parser.add_argument(
+        "--end", type=int, default=None,
+        help="1-based end rank, inclusive (default: all stocks from --start)"
+    )
+    args = parser.parse_args()
+
+    start_rank = args.start
+    end_rank = args.end
+
+    range_label = f"ranks {start_rank}–{end_rank}" if end_rank else f"ranks {start_rank}–end"
+    print(f"Processing stock {range_label}")
+
     # Check if today is Sunday (6)
     today = datetime.date.today()
     weekday = today.weekday()
-    
+
     if weekday == 6:
         print(f"Today is Sunday ({today}). Skipping PSX data fetch as it's a holiday.")
         return
 
     # Define the dynamic date range based on the day of the week
     if weekday == 0:  # Monday
-        # On Monday, just fetch today's data (skip Sunday)
         start_date = today
         end_date = today
         print(f"Monday run detected. Fetching data only for today: {today}")
     elif weekday == 5:  # Saturday
-        # On Saturday, fetch yesterday's (Friday's) data
         friday = today - datetime.timedelta(days=1)
         start_date = friday
         end_date = friday
         print(f"Saturday run detected. Fetching data for Friday: {friday}")
     else:
-        # Tuesday-Friday: Fetch yesterday and today
         start_date = today - datetime.timedelta(days=1)
         end_date = today
         print(f"Weekday run detected. Fetching data from {start_date} to {end_date}")
 
     # MongoDB connection settings via environment variables
-    # Provide sensible defaults for local development
     connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
     db_name = os.getenv("FINHISAAB_DB_NAME", "finhisaab")
     collection_name = os.getenv("FINHISAAB_COLLECTION", "stockpricehistories")
 
-    # Early connectivity test to fail fast if DB is unreachable
     if not test_mongo_connectivity(connection_string, db_name):
         print("Exiting due to MongoDB connectivity failure.")
         return
 
-    # --- Fetch stock symbols from MongoDB in batches and process ---
-
-    # Batching and throttling configuration via environment variables
+    # Throttling configuration via environment variables
     batch_size = int(os.getenv("FINHISAAB_BATCH_SIZE", "10"))
-    max_batches_env = os.getenv("FINHISAAB_MAX_BATCHES", "")
-    max_batches = int(max_batches_env) if max_batches_env.strip().isdigit() else None
+    symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "0.3"))
+    symbol_delay_max = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MAX", "0.7"))
+    batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "1"))
+    batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "2"))
 
-    # Optional throttling controls
-    symbol_delay_min = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MIN", "1"))
-    symbol_delay_max = float(os.getenv("FINHISAAB_SYMBOL_DELAY_MAX", "2"))
-    batch_delay_min = float(os.getenv("FINHISAAB_BATCH_DELAY_MIN", "5"))
-    batch_delay_max = float(os.getenv("FINHISAAB_BATCH_DELAY_MAX", "7"))
+    # Fetch the assigned slice of symbols from MongoDB in one query
+    all_symbols = get_stock_symbols_range(connection_string, db_name, start_rank, end_rank)
 
-    batch_number = 1
-    processed_batches = 0
+    if not all_symbols:
+        print("No stock symbols found for the specified range. Exiting.")
+        return
 
-    while True:
+    print(f"Total symbols to process: {len(all_symbols)}")
+
+    # Chunk into internal batches for throttling
+    batches = [all_symbols[i:i + batch_size] for i in range(0, len(all_symbols), batch_size)]
+
+    for batch_number, symbols_to_process in enumerate(batches, start=1):
         print(f"\n{'='*50}")
-        print(f"Fetching batch #{batch_number} of up to {batch_size} symbols...")
-        symbols_to_process = get_stock_symbols(
-            connection_string,
-            db_name,
-            batch_number=batch_number,
-            batch_size=batch_size
-        )
+        print(f"Batch {batch_number}/{len(batches)}: {len(symbols_to_process)} symbols")
 
-        if not symbols_to_process:
-            print("No more stock symbols found or an error occurred. Exiting batch loop.")
-            break
-
-        print(f"Found {len(symbols_to_process)} symbols to process in batch #{batch_number}.")
-
-        # Try to fetch data for the whole batch in a single call
         batch_data = None
         try:
             print(f"Attempting batch fetch for symbols: {symbols_to_process}")
             batch_data = stocks(symbols_to_process, start=start_date, end=end_date)
         except Exception as e:
             print(f"Batch fetch failed; will fallback to per-symbol fetch. Error: {e}")
-            batch_data = None
 
         for i, symbol in enumerate(symbols_to_process):
             print(f"\nProcessing symbol: {symbol} for range {start_date} to {end_date}")
 
-            # Resolve the DataFrame for this symbol
             try:
                 symbol_df = None
                 if isinstance(batch_data, dict) and symbol in batch_data:
                     symbol_df = batch_data[symbol]
                 elif isinstance(batch_data, pd.DataFrame):
-                    # If the batch data is a MultiIndex DataFrame with 'Ticker' level, slice it
                     try:
-                        df_candidate = batch_data
-                        index_names = list(df_candidate.index.names or [])
+                        index_names = list(batch_data.index.names or [])
                         if 'Ticker' in index_names:
-                            symbol_df = df_candidate.xs(symbol, level='Ticker')
+                            symbol_df = batch_data.xs(symbol, level='Ticker')
                     except Exception:
                         symbol_df = None
-                
-                # Fallback to single-symbol fetch if needed
+
                 if symbol_df is None:
                     print("Fetching individually for symbol due to unavailable batch data slice...")
                     symbol_df = stocks(symbol, start=start_date, end=end_date)
@@ -190,13 +187,12 @@ def main():
                 if symbol_df is None or symbol_df.empty:
                     print(f"No data found for {symbol} in this range.")
                     continue
-                else:
-                    print(f"Retrieved {len(symbol_df)} records for {symbol}")
+
+                print(f"Retrieved {len(symbol_df)} records for {symbol}")
             except Exception as e:
                 print(f"An error occurred while fetching data for {symbol}: {e}")
                 continue
 
-            # Save data to MongoDB
             print(f"Saving data to MongoDB ({db_name}.{collection_name}) for {symbol}...")
             success, message = save_to_mongodb(
                 df=symbol_df,
@@ -208,27 +204,18 @@ def main():
             print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
             print(f"Message: {message}")
 
-            # Delay between symbols to avoid overload
             if i < len(symbols_to_process) - 1:
                 delay = random.uniform(symbol_delay_min, symbol_delay_max)
                 print(f"Waiting {delay:.2f} seconds before next symbol...")
                 time.sleep(delay)
 
-        # Delay between batches
-        batch_delay = random.uniform(batch_delay_min, batch_delay_max)
-        print(f"\nCompleted batch #{batch_number}. Waiting {batch_delay:.2f} seconds before next batch...")
-        time.sleep(batch_delay)
-
-        batch_number += 1
-        processed_batches += 1
-
-        # If max_batches is set (e.g., for local testing), stop after processing that many batches
-        if max_batches is not None and processed_batches >= max_batches:
-            print(f"Reached FINHISAAB_MAX_BATCHES={max_batches}. Stopping further batch processing for this run.")
-            break
+        if batch_number < len(batches):
+            batch_delay = random.uniform(batch_delay_min, batch_delay_max)
+            print(f"\nCompleted batch {batch_number}. Waiting {batch_delay:.2f} seconds...")
+            time.sleep(batch_delay)
 
     print(f"\n{'='*50}")
-    print("All batches processed for the current run.")
+    print(f"All {len(all_symbols)} symbols processed for {range_label}.")
  
 
 if __name__ == "__main__":
