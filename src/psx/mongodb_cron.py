@@ -2,10 +2,13 @@
 Script for daily cron job to fetch PSX data and store it in MongoDB.
 
 Supports parallel execution via --start / --end flags (1-based rank in
-market-cap-sorted stock list).  Example — split 550 stocks across 10 workers:
-    python mongodb_cron.py --start 1   --end 55
-    python mongodb_cron.py --start 56  --end 110
-    ...
+market-cap-sorted stock list).  Example — split 550-600 stocks across 6 workers:
+    python mongodb_cron.py --start 1   --end 100
+    python mongodb_cron.py --start 101 --end 200
+    python mongodb_cron.py --start 201 --end 300
+    python mongodb_cron.py --start 301 --end 400
+    python mongodb_cron.py --start 401 --end 500
+    python mongodb_cron.py --start 501
 Omit both flags to process all stocks (default / backward-compatible).
 """
 
