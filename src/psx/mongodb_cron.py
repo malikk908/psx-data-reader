@@ -1,9 +1,17 @@
 """
 Script for daily cron job to fetch PSX data and store it in MongoDB.
+
+Supports parallel execution via --start / --end flags (1-based rank in
+market-cap-sorted stock list).  Example — split 550 stocks across 10 workers:
+    python mongodb_cron.py --start 1   --end 55
+    python mongodb_cron.py --start 56  --end 110
+    ...
+Omit both flags to process all stocks (default / backward-compatible).
 """
 
 from psx import stocks
 from psx.data_store import save_to_mongodb
+import argparse
 import datetime
 import time
 import random
@@ -46,32 +54,35 @@ def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
             pass
 
 
-def get_stock_symbols(connection_string, db_name, batch_number=1, batch_size=10):
+def get_stock_symbols_range(connection_string, db_name, start_rank=1, end_rank=None):
     """
-    Fetch stock symbols from the 'stock' collection in MongoDB, sorted by marketCap.
+    Fetch stock symbols from MongoDB sorted by marketCap descending.
+
+    start_rank / end_rank are 1-based and inclusive.  end_rank=None means
+    fetch from start_rank to the end of the collection.
     """
     client = None
     try:
         client = MongoClient(connection_string)
         db = client[db_name]
         stocks_collection = db['stocks']
-        
-        # Calculate the number of documents to skip
-        skip_amount = (batch_number - 1) * batch_size
-        
-        # Fetch symbols, sorted by marketCap descending
-        symbols = stocks_collection.find({}, {'symbol': 1, '_id': 0}) \
-                                   .sort('marketCap', -1) \
-                                   .skip(skip_amount) \
-                                   .limit(batch_size)
-        
-        return [s['symbol'] for s in symbols]
-    
+
+        skip = start_rank - 1
+        limit = (end_rank - start_rank + 1) if end_rank is not None else 0
+
+        cursor = stocks_collection.find({}, {'symbol': 1, '_id': 0}) \
+                                  .sort('marketCap', -1) \
+                                  .skip(skip)
+        if limit > 0:
+            cursor = cursor.limit(limit)
+
+        return [s['symbol'] for s in cursor]
+
     except PyMongoError as e:
         print(f"Error fetching stock symbols: {e}")
         return []
     finally:
-        if 'client' in locals():
+        if client is not None:
             client.close()
 
 def main():
