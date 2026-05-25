@@ -4,6 +4,9 @@ and a custom start date, then optionally save them to MongoDB.
 Supports both in-script configuration and CLI overrides, including dry-run mode.
 """
 
+# usage
+# python3 src/psx/sync_custom_stocks.py --dry-run
+
 import os
 import random
 import time
@@ -25,10 +28,10 @@ except Exception:
 # Change these values to set default targets when running without CLI flags.
 # ==============================================================================
 # The list of stock symbols you want to fetch:
-DEFAULT_SYMBOLS = ["SYS", "MEBL", "ENGRO", "OGDC", "HUBC"]
+DEFAULT_SYMBOLS = ["ARMG", "JSRR", "SPAC1", "SPSL", "WAHDAT"]
 
 # The start date for the historical data lookup:
-DEFAULT_START_DATE = datetime.date(2023, 1, 1)
+DEFAULT_START_DATE = datetime.date(2023, 3, 29)
 
 # Set to True by default if you want to run safely without writing to DB:
 DEFAULT_DRY_RUN = False
