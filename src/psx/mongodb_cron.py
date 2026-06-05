@@ -186,24 +186,22 @@ def main():
 
                 if symbol_df is None or symbol_df.empty:
                     print(f"No data found for {symbol} in this range.")
-                    continue
-
-                print(f"Retrieved {len(symbol_df)} records for {symbol}")
+                else:
+                    print(f"Retrieved {len(symbol_df)} records for {symbol}")
+                    print(f"Saving data to MongoDB ({db_name}.{collection_name}) for {symbol}...")
+                    success, message = save_to_mongodb(
+                        df=symbol_df,
+                        symbol=symbol,
+                        connection_string=connection_string,
+                        db_name=db_name,
+                        collection_name=collection_name
+                    )
+                    print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
+                    print(f"Message: {message}")
             except Exception as e:
                 print(f"An error occurred while fetching data for {symbol}: {e}")
-                continue
 
-            print(f"Saving data to MongoDB ({db_name}.{collection_name}) for {symbol}...")
-            success, message = save_to_mongodb(
-                df=symbol_df,
-                symbol=symbol,
-                connection_string=connection_string,
-                db_name=db_name,
-                collection_name=collection_name
-            )
-            print(f"MongoDB Save Result: {'Success' if success else 'Failed'}")
-            print(f"Message: {message}")
-
+            # Delay between symbols to avoid overload (always runs even if errors occurred)
             if i < len(symbols_to_process) - 1:
                 delay = random.uniform(symbol_delay_min, symbol_delay_max)
                 print(f"Waiting {delay:.2f} seconds before next symbol...")

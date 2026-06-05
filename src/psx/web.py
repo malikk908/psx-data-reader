@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from curl_cffi import requests
 import time
+import random
 from pdb import set_trace
 
 
@@ -62,7 +63,13 @@ class DataReader:
         tickers = [tickers] if isinstance(tickers, str) else tickers
         dates = self.daterange(start, end)
 
-        data = [self.get_psx_data(ticker, dates)[start: end] for ticker in tickers]
+        data = []
+        for i, ticker in enumerate(tickers):
+            df = self.get_psx_data(ticker, dates)[start: end]
+            data.append(df)
+            if len(tickers) > 1 and i < len(tickers) - 1:
+                delay = random.uniform(1.0, 2.0)
+                time.sleep(delay)
 
         if len(data) == 1:
             return data[0]
