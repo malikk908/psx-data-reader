@@ -10,7 +10,7 @@ from tqdm import tqdm
 import threading
 import pandas as pd
 import numpy as np
-import requests
+from curl_cffi import requests
 import time
 from pdb import set_trace
 
@@ -27,7 +27,15 @@ class DataReader:
     @property
     def session(self):
         if not hasattr(self.__local, "session"):
-            self.__local.session = requests.Session()
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Referer": "https://dps.psx.com.pk/"
+            }
+            self.__local.session = requests.Session(impersonate="chrome", headers=headers)
         return self.__local.session
 
     def tickers(self):
@@ -65,9 +73,9 @@ class DataReader:
     def download(self, symbol: str, date: date):
         session = self.session
         post = {"month": date.month, "year": date.year, "symbol": symbol}
-        with session.post(self.__history, data=post) as response:
-            data = parser(response.text, features="html.parser")
-            data = self.toframe(data)
+        response = session.post(self.__history, data=post)
+        data = parser(response.text, features="html.parser")
+        data = self.toframe(data)
         return data
 
     def toframe(self, data):
