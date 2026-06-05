@@ -102,6 +102,7 @@ def main():
 
     range_label = f"ranks {start_rank}–{end_rank}" if end_rank else f"ranks {start_rank}–end"
     print(f"Processing stock {range_label}")
+    failed_symbols = []
 
     # Check if today is Sunday (6)
     today = datetime.date.today()
@@ -200,6 +201,7 @@ def main():
                     print(f"Message: {message}")
             except Exception as e:
                 print(f"An error occurred while fetching data for {symbol}: {e}")
+                failed_symbols.append((symbol, str(e)))
 
             # Delay between symbols to avoid overload (always runs even if errors occurred)
             if i < len(symbols_to_process) - 1:
@@ -214,6 +216,9 @@ def main():
 
     print(f"\n{'='*50}")
     print(f"All {len(all_symbols)} symbols processed for {range_label}.")
+
+    if failed_symbols:
+        raise RuntimeError(f"Scraping failed for the following {len(failed_symbols)} symbols: {failed_symbols}")
  
 
 if __name__ == "__main__":
