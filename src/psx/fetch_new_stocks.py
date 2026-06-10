@@ -2,6 +2,7 @@
 """
 Script to query MongoDB 'stocks' collection by custom criteria (e.g., createdAt)
 and fetch/store stock price history from a specified date onwards.
+Supports batching options to run target slices of symbols.
 """
 
 import os
@@ -70,9 +71,9 @@ def convert_dates_in_query(q):
     else:
         return parse_iso_datetime(q)
 
-def get_matching_symbols(connection_string, db_name, query_filter, limit=None):
+def get_matching_symbols(connection_string, db_name, query_filter):
     """
-    Queries the stocks collection and returns a list of symbols.
+    Queries the stocks collection and returns all matching symbols sorted alphabetically.
     """
     client = MongoClient(connection_string)
     db = client[db_name]
@@ -80,10 +81,8 @@ def get_matching_symbols(connection_string, db_name, query_filter, limit=None):
 
     print(f"[*] Querying 'stocks' collection with filter: {query_filter}")
     cursor = stocks_collection.find(query_filter, {'symbol': 1, '_id': 0})
-    if limit:
-        cursor = cursor.limit(limit)
     
-    symbols = [doc['symbol'] for doc in cursor if 'symbol' in doc]
+    symbols = sorted([doc['symbol'] for doc in cursor if 'symbol' in doc])
     client.close()
     return symbols
 
@@ -107,9 +106,16 @@ def main():
         help="Start date to fetch prices from (format: YYYY-MM-DD). Defaults to 30 days ago."
     )
     parser.add_argument(
-        "--limit",
+        "--batch-number",
         type=int,
-        help="Maximum number of symbols to fetch."
+        default=1,
+        help="Batch number to fetch (1-indexed)."
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=25,
+        help="Number of stocks to process per batch (max 25 by default)."
     )
     parser.add_argument(
         "--dry-run",
@@ -120,7 +126,8 @@ def main():
     args = parser.parse_args()
 
     # MongoDB connection settings via environment variables
-    connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://127.0.0.1:27017/")
+    # Default to the correct host 192.168.0.131 as verified from other files
+    connection_string = os.getenv("FINHISAAB_MONGO_URI", "mongodb://192.168.0.131:27017/")
     db_name = os.getenv("FINHISAAB_DB_NAME", "finhisaab")
     collection_name = os.getenv("FINHISAAB_COLLECTION", "stockpricehistories")
 
@@ -188,17 +195,30 @@ def main():
 
     # 3. Retrieve matching symbols
     try:
-        symbols = get_matching_symbols(connection_string, db_name, query_filter, limit=args.limit)
+        all_symbols = get_matching_symbols(connection_string, db_name, query_filter)
     except Exception as e:
         print(f"[-] Failed to retrieve symbols from database: {e}")
         return
 
-    if not symbols:
+    if not all_symbols:
         print("[*] No symbols found matching the specified criteria.")
         return
 
+    # Apply batching
+    total_matching = len(all_symbols)
+    batch_size = max(1, min(25, args.batch_size))  # Max 25 per user requirements
+    batch_number = max(1, args.batch_number)
+    
+    skip_amount = (batch_number - 1) * batch_size
+    symbols = all_symbols[skip_amount : skip_amount + batch_size]
+
+    if not symbols:
+        print(f"[*] Batch {batch_number} (size {batch_size}) contains no symbols. Total matching: {total_matching}.")
+        return
+
     print("=" * 60)
-    print(f"[*] Found {len(symbols)} matching symbol(s): {symbols}")
+    print(f"[*] Total matching symbols found: {total_matching}")
+    print(f"[*] Processing Batch {batch_number} (size {batch_size}): {symbols}")
     print(f"[*] Fetching historical prices from: {start_date} to {end_date}")
     print(f"[*] Mode: {'DRY RUN' if args.dry_run else 'WRITE TO DATABASE'}")
     print("=" * 60)
@@ -260,9 +280,9 @@ def main():
     print("\n" + "=" * 60)
     print("                      EXECUTION SUMMARY")
     print("=" * 60)
-    print(f"Total processed: {total_symbols}")
-    print(f"Successful:      {len(successful_syncs)}")
-    print(f"Failed:          {len(failed_syncs)}")
+    print(f"Total processed in this batch: {total_symbols}")
+    print(f"Successful:                    {len(successful_syncs)}")
+    print(f"Failed:                        {len(failed_syncs)}")
     
     if successful_syncs:
         print("\nSuccessful Syncs:")
