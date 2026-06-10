@@ -100,17 +100,15 @@ class DataReader:
         return pd.DataFrame(stocks, columns=self.headers).set_index("TIME")
 
     def daterange(self, start: date, end: date) -> list:
-        period = end - start
-        number_of_months = period.days // 30
-        current_date = datetime(start.year, start.month, 1)
-        dates = [current_date]
-
-        for month in range(number_of_months):
-            prev_date = dates[-1]
-            dates.append(prev_date + relativedelta(months=1))
-
-        dates = dates if len(dates) else [start]
-        return dates
+        current = datetime(start.year, start.month, 1)
+        last = datetime(end.year, end.month, 1)
+        
+        dates = []
+        while current <= last:
+            dates.append(current)
+            current += relativedelta(months=1)
+            
+        return dates if dates else [start]
 
     def preprocess(self, data: list) -> pd.DataFrame:
         # concatenate each frame to a single dataframe
