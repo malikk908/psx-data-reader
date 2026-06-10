@@ -3,6 +3,45 @@
 Script to query MongoDB 'stocks' collection by custom criteria (e.g., createdAt)
 and fetch/store stock price history from a specified date onwards.
 Supports batching options to run target slices of symbols.
+
+================================================================================
+USAGE GUIDE & EXAMPLES
+================================================================================
+
+1. View Help Options:
+   .venv/bin/python src/psx/fetch_new_stocks.py --help
+
+2. Query by symbol (Dry-Run Mode):
+   .venv/bin/python src/psx/fetch_new_stocks.py --query '{"symbol": "SYS"}' --dry-run
+
+3. Query by custom JSON criteria (e.g., all symbols that are not ETFs):
+   .venv/bin/python src/psx/fetch_new_stocks.py --query '{"isETF": false}' --dry-run
+
+4. Query by createdAt date:
+   .venv/bin/python src/psx/fetch_new_stocks.py --created-after 2026-06-01 --dry-run
+
+5. Fetch batch 2, with a batch size of 15:
+   .venv/bin/python src/psx/fetch_new_stocks.py --query '{}' --batch-number 2 --batch-size 15 --dry-run
+
+6. Live Syncing (write to DB) from a custom start date:
+   .venv/bin/python src/psx/fetch_new_stocks.py --query '{"symbol": "SYS"}' --start-date 2026-05-01
+
+   python src/psx/fetch_new_stocks.py --created-after 2026-03-01 --batch-size 15 --batch-number 1 --start-date 2026-03-01 --dry-run
+
+================================================================================
+ARGUMENTS DESCRIPTION
+================================================================================
+--created-after  : Filter stocks in the stocks collection that have a `createdAt` 
+                   date greater than or equal to the specified date.
+                   Supported formats: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.
+--query          : A raw JSON string query to filter the stocks collection.
+                   Supports MongoDB Extended JSON syntax (e.g. for dates).
+--start-date     : Start date from which to fetch stock prices (default: 30 days ago).
+                   Format: YYYY-MM-DD.
+--batch-number   : Specify which page/batch of symbols to fetch (default: 1).
+--batch-size     : Max number of stocks to process per batch (default: 25, capped at 25).
+--dry-run        : Runs the query to print matching symbols without making API calls 
+                   or saving data to the database.
 """
 
 import os
