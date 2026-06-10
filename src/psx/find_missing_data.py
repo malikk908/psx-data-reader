@@ -7,6 +7,7 @@ import datetime
 import json
 import random
 import time
+import argparse
 import pandas as pd
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
@@ -140,10 +141,37 @@ def group_missing_dates(missing_dates, max_ignored_gap_size=1):
     return ranges
 
 def main():
-    # --- Configuration ---
-    # Configure the global date range you want to check for missing data
-    start_date = datetime.date(2020, 1, 1)
-    end_date = datetime.date(2025, 9, 26)
+    parser = argparse.ArgumentParser(description="Identify missing price data intervals for PSX stocks in MongoDB.")
+    parser.add_argument(
+        "--start-date", type=str, default="2026-05-25",
+        help="Start date to check (YYYY-MM-DD, default: 2026-05-25)"
+    )
+    parser.add_argument(
+        "--end-date", type=str, default=None,
+        help="End date to check (YYYY-MM-DD, defaults to today)"
+    )
+    parser.add_argument(
+        "--threshold", type=int, default=10,
+        help="Minimum missing business days to report/fetch (default: 10)"
+    )
+    args = parser.parse_args()
+
+    # Convert start date
+    try:
+        start_date = datetime.datetime.strptime(args.start_date, "%Y-%m-%d").date()
+    except ValueError:
+        print(f"Error: Invalid start-date format '{args.start_date}'. Must be YYYY-MM-DD.")
+        return
+
+    # Convert end date
+    if args.end_date:
+        try:
+            end_date = datetime.datetime.strptime(args.end_date, "%Y-%m-%d").date()
+        except ValueError:
+            print(f"Error: Invalid end-date format '{args.end_date}'. Must be YYYY-MM-DD.")
+            return
+    else:
+        end_date = datetime.date.today()
 
     # Exclusions
     exclusions = [
@@ -220,7 +248,7 @@ def main():
     max_batches = int(max_batches_env) if max_batches_env and max_batches_env.strip().isdigit() else None
     
     # Gap filtering configuration
-    max_ignored_gap_size = int(os.getenv("FINHISAAB_MAX_IGNORED_GAP_SIZE", "1"))
+    max_ignored_gap_size = args.threshold
 
     # Output file
     output_filename = "missing_data_report.json"
