@@ -177,10 +177,15 @@ def build_upsert_doc(quote):
     Convert a raw quote dict from scrape_company_quote() into a MongoDB
     UpdateOne operation keyed on (symbol, as_of).
 
-    as_of  → stored as naive datetime (PKT) — keeps PSX timezone convention.
+    as_of  → parsed from PKT ISO string, converted to UTC-aware datetime before
+             storing so MongoDB date operators and range queries work correctly.
     scraped_at → stored as UTC-aware datetime — required by MongoDB TTL index.
     """
-    as_of_dt = datetime.fromisoformat(quote["as_of"]) if quote.get("as_of") else None
+    as_of_dt = None
+    if quote.get("as_of"):
+        # Scraper returns a naive ISO string in PKT (UTC+5); attach PKT tzinfo
+        # then convert to UTC so MongoDB stores the correct epoch.
+        as_of_dt = datetime.fromisoformat(quote["as_of"]).replace(tzinfo=PKT).astimezone(timezone.utc)
     # scraped_at comes as an aware ISO string from the scraper; re-attach tzinfo
     scraped_at_dt = datetime.fromisoformat(quote["scraped_at"])
     if scraped_at_dt.tzinfo is None:
