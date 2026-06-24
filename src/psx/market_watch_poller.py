@@ -29,6 +29,7 @@ Storage: intraday_klines_temp collection.
 
 import logging
 import os
+import random
 import time
 from collections import deque
 from datetime import datetime, timedelta, timezone
@@ -329,10 +330,6 @@ def run_poll_cycle(collection, session):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="PSX market-watch intraday poller.")
-    parser.add_argument(
-        "--cycle-seconds", type=float, default=None,
-        help="Minimum seconds between cycles (default: INTRADAY_POLL_CYCLE_MIN_SECONDS or 60)",
-    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -340,16 +337,17 @@ def main():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    dst_uri        = os.getenv("MONGODB_INTRADAY_URI", "mongodb://127.0.0.1:27017/")
-    dst_db_name    = os.getenv("MONGODB_INTRADAY_DB_NAME", "finhisaab_intraday")
-    cycle_min_secs = args.cycle_seconds or float(os.getenv("INTRADAY_POLL_CYCLE_MIN_SECONDS", "60"))
-    stasis_thresh  = int(os.getenv("INTRADAY_STASIS_THRESHOLD", "3"))
-    holiday_recheck= float(os.getenv("INTRADAY_HOLIDAY_RECHECK_MIN", "20"))
+    dst_uri         = os.getenv("MONGODB_INTRADAY_URI", "mongodb://127.0.0.1:27017/")
+    dst_db_name     = os.getenv("MONGODB_INTRADAY_DB_NAME", "finhisaab_intraday")
+    cycle_min_secs  = float(os.getenv("INTRADAY_POLL_CYCLE_MIN_SECONDS", "90"))
+    cycle_max_secs  = float(os.getenv("INTRADAY_POLL_CYCLE_MAX_SECONDS", "150"))
+    stasis_thresh   = int(os.getenv("INTRADAY_STASIS_THRESHOLD", "3"))
+    holiday_recheck = float(os.getenv("INTRADAY_HOLIDAY_RECHECK_MIN", "20"))
 
     logger.info(
-        "Starting market-watch poller | cycle floor: %.0fs | "
+        "Starting market-watch poller | cycle range: %.0f–%.0fs | "
         "stasis threshold: %d cycles | holiday recheck: %.0f min.",
-        cycle_min_secs, stasis_thresh, holiday_recheck,
+        cycle_min_secs, cycle_max_secs, stasis_thresh, holiday_recheck,
     )
 
     if not test_mongo_connectivity(dst_uri, dst_db_name):
@@ -396,11 +394,13 @@ def main():
                         cycle_number = 0  # reset so logs are readable after each wake
                         continue
 
-                # Pace to cycle floor
-                remainder = cycle_min_secs - summary["elapsed_s"]
+                # Pace to a random interval within [cycle_min_secs, cycle_max_secs]
+                target_secs = random.uniform(cycle_min_secs, cycle_max_secs)
+                remainder   = target_secs - summary["elapsed_s"]
                 if remainder > 0:
                     next_secs, _ = seconds_until_next_open()
                     if next_secs == 0:
+                        logger.debug("Pacing: sleeping %.0fs before next cycle.", remainder)
                         time.sleep(remainder)
 
     except KeyboardInterrupt:
