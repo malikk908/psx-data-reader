@@ -1,22 +1,36 @@
 """
 Continuously-running intraday poller using the /market-watch bulk endpoint.
 
-One HTTP request per cycle fetches all ~500 PSX symbols at once, vs the
-per-symbol approach in intraday_poller.py. No --start/--end slicing needed —
-a single instance covers the entire market.
+One HTTP request per cycle fetches all ~500 PSX symbols at once.
+A single instance covers the entire market — no --start/--end slicing needed.
 
 Usage:
-    python market_watch_poller.py
+    python -m psx.market_watch_poller
 
-Stores snapshots in intraday_klines_temp (MONGODB_INTRADAY_URI).
-Documents expire automatically after 48 hours via a TTL index on scraped_at.
-Upsert key: (symbol, scraped_at_minute) — one document per symbol per UTC minute,
-so rapid re-polls within the same minute are idempotent.
+Market closure detection (two layers):
+  1. Clock-based  — sleeps overnight and on weekends using PKT market hours.
+  2. Volume-stasis — during clock-open hours, if total market volume is
+     identical across STASIS_THRESHOLD consecutive cycles the market is
+     assumed to be on a public holiday or unexpected halt. The poller backs
+     off for HOLIDAY_RECHECK_MINUTES before rechecking. Max backoff caps at
+     the next scheduled clock-open so we never sleep past the next trading day.
+
+Env vars:
+    MONGODB_INTRADAY_URI          destination MongoDB URI
+    MONGODB_INTRADAY_DB_NAME      destination database name (default: finhisaab_intraday)
+    INTRADAY_POLL_CYCLE_MIN_SECONDS   floor between cycles in seconds (default: 60)
+    INTRADAY_STASIS_THRESHOLD     frozen cycles before holiday sleep (default: 3)
+    INTRADAY_HOLIDAY_RECHECK_MIN  minutes to sleep when stasis detected (default: 20)
+
+Storage: intraday_klines_temp collection.
+  Upsert key : (symbol, scraped_at_minute) — one doc per symbol per UTC minute.
+  TTL        : scraped_at field, 48 hours.
 """
 
 import logging
 import os
 import time
+from collections import deque
 from datetime import datetime, timedelta, timezone
 from datetime import time as time_type
 
@@ -36,7 +50,7 @@ from psx.market_watch_scraper import fetch_market_watch
 logger = logging.getLogger(__name__)
 
 PKT          = timezone(timedelta(hours=5))
-MARKET_OPEN  = time_type(9, 25)
+MARKET_OPEN  = time_type(9, 25)   # 5-min warmup before official 09:30 open
 MARKET_CLOSE = time_type(15, 30)
 
 INTRADAY_COLLECTION = "intraday_klines_temp"
@@ -49,7 +63,7 @@ INTRADAY_COLLECTION = "intraday_klines_temp"
 def test_mongo_connectivity(connection_string, db_name):
     try:
         client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
-        client.admin.command('ping')
+        client.admin.command("ping")
         _ = client[db_name].name
         print(f"MongoDB connectivity OK for {connection_string} (db: {db_name})")
         return True
@@ -58,7 +72,7 @@ def test_mongo_connectivity(connection_string, db_name):
         return False
     finally:
         try:
-            if 'client' in locals():
+            if "client" in locals():
                 client.close()
         except Exception:
             pass
@@ -66,13 +80,10 @@ def test_mongo_connectivity(connection_string, db_name):
 
 def ensure_indexes(collection):
     """
-    Indexes on intraday_klines_temp. Idempotent — safe to call every startup.
+    Create indexes on intraday_klines_temp. Idempotent — safe to call every startup.
 
-    Upsert key: (symbol, scraped_at_minute) — UTC datetime truncated to the
-    minute. One document per symbol per minute; rapid re-polls within the same
-    minute overwrite the same doc.
-
-    TTL on scraped_at — auto-purge raw UTC datetime after 48 h.
+    1. Unique compound (symbol, scraped_at_minute) — upsert key.
+    2. TTL on scraped_at (UTC datetime) — auto-purge after 48 h.
     """
     collection.create_index(
         [("symbol", pymongo.ASCENDING), ("scraped_at_minute", pymongo.ASCENDING)],
@@ -81,14 +92,14 @@ def ensure_indexes(collection):
     )
     collection.create_index(
         [("scraped_at", pymongo.ASCENDING)],
-        expireAfterSeconds=172800,   # 48 h
+        expireAfterSeconds=172800,  # 48 h
         name="scraped_at_ttl",
     )
     logger.info("Indexes ensured on %s.", INTRADAY_COLLECTION)
 
 
 # ---------------------------------------------------------------------------
-# Market-hours logic  (identical to intraday_poller.py)
+# Clock-based market-hours logic
 # ---------------------------------------------------------------------------
 
 def now_pkt():
@@ -98,10 +109,10 @@ def now_pkt():
 def seconds_until_next_open():
     """
     Return (seconds_float, reason_str).
-    Returns (0, 'open') during PSX market hours.
+    Returns (0, 'open') when the clock says the market should be open.
     """
     now = now_pkt()
-    wd  = now.weekday()
+    wd  = now.weekday()   # 0=Mon … 4=Fri, 5=Sat, 6=Sun
     t   = now.time().replace(second=0, microsecond=0)
 
     if wd <= 4 and MARKET_OPEN <= t < MARKET_CLOSE:
@@ -119,11 +130,20 @@ def seconds_until_next_open():
         next_open = (now + timedelta(days=1)).replace(hour=9, minute=25, second=0, microsecond=0)
 
     seconds = (next_open - now).total_seconds()
-    reason  = f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT"
-    return (max(seconds, 0.0), reason)
+    return (max(seconds, 0.0), f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT")
+
+
+def _chunked_sleep(target_utc):
+    """Sleep in 60-second chunks until target_utc, responding to Ctrl-C quickly."""
+    while True:
+        remaining = (target_utc - datetime.now(timezone.utc)).total_seconds()
+        if remaining <= 0:
+            break
+        time.sleep(min(remaining, 60.0))
 
 
 def sleep_until_open():
+    """Block until the clock says the market is open."""
     seconds, reason = seconds_until_next_open()
     if seconds <= 0:
         return
@@ -133,12 +153,82 @@ def sleep_until_open():
         reason, seconds / 60,
         target_utc.astimezone(PKT).strftime("%Y-%m-%d %H:%M"),
     )
-    while True:
-        remaining = (target_utc - datetime.now(timezone.utc)).total_seconds()
-        if remaining <= 0:
-            break
-        time.sleep(min(remaining, 60.0))
+    _chunked_sleep(target_utc)
     logger.info("Waking up — market should be open now.")
+
+
+# ---------------------------------------------------------------------------
+# Volume-stasis holiday detection
+# ---------------------------------------------------------------------------
+
+class StasisDetector:
+    """
+    Tracks total market volume across recent cycles.
+
+    If the last `threshold` cycles all report the same total volume the market
+    is assumed to be on a public holiday or in an unexpected halt.
+
+    Only active during clock-open hours — the clock-based sleep handles
+    nights and weekends, so stasis detection is the second layer for holidays.
+
+    After stasis is confirmed:
+      - sleeps for `recheck_minutes`, capped so we never sleep past the next
+        scheduled clock-open (avoids sleeping through the next trading day).
+      - resets its history so the next cycle starts fresh.
+    """
+
+    def __init__(self, threshold, recheck_minutes):
+        self.threshold        = threshold
+        self.recheck_minutes  = recheck_minutes
+        self._recent_volumes  = deque(maxlen=threshold)
+
+    def record(self, total_volume):
+        """Call after every successful cycle with the sum of all symbol volumes."""
+        self._recent_volumes.append(total_volume)
+
+    def is_stale(self):
+        """
+        True when we have enough samples and every one is identical.
+        Guards against the pre-open window (09:25-09:30) by requiring
+        volume > 0 — a zero-volume market is pre-open, not a holiday.
+        """
+        if len(self._recent_volumes) < self.threshold:
+            return False
+        volumes = list(self._recent_volumes)
+        if volumes[0] == 0:
+            return False  # pre-open, no trades yet
+        return len(set(volumes)) == 1
+
+    def sleep_and_reset(self):
+        """
+        Sleep for recheck_minutes (or until next clock-open, whichever is sooner),
+        then clear history so the next cycle evaluates fresh data.
+        """
+        recheck_secs       = self.recheck_minutes * 60
+        clock_secs, _      = seconds_until_next_open()
+        # If market already closed by clock, use clock sleep instead
+        if clock_secs > 0:
+            sleep_secs = clock_secs
+            label      = "clock-open"
+        else:
+            # Cap recheck at whatever time remains until clock-close,
+            # so we never accidentally sleep past 15:30 on a thin trading day
+            now_t   = now_pkt().time().replace(second=0, microsecond=0)
+            close_dt = now_pkt().replace(hour=15, minute=30, second=0, microsecond=0)
+            secs_to_close = (close_dt - now_pkt()).total_seconds()
+            sleep_secs = min(recheck_secs, max(secs_to_close, 60))
+            label      = "holiday/halt recheck"
+
+        target_utc = datetime.now(timezone.utc) + timedelta(seconds=sleep_secs)
+        logger.warning(
+            "Volume stasis detected across %d cycles — possible holiday or halt. "
+            "Sleeping %.0f min (%s) until ~%s PKT.",
+            self.threshold, sleep_secs / 60, label,
+            target_utc.astimezone(PKT).strftime("%H:%M"),
+        )
+        _chunked_sleep(target_utc)
+        logger.info("Recheck after stasis sleep — resuming polling.")
+        self._recent_volumes.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -146,45 +236,41 @@ def sleep_until_open():
 # ---------------------------------------------------------------------------
 
 def _minute_floor(dt_utc):
-    """Truncate a UTC-aware datetime to the minute — used as the upsert bucket."""
     return dt_utc.replace(second=0, microsecond=0)
 
 
 def build_ops(quotes, scraped_at):
     """
-    Convert the list of quote dicts from fetch_market_watch() into
-    a list of UpdateOne operations ready for bulk_write.
+    Convert quote dicts from fetch_market_watch() into UpdateOne ops.
 
-    Upsert key: (symbol, scraped_at_minute)
-      - scraped_at_minute  — UTC datetime floored to the minute
-      - scraped_at         — exact UTC datetime (kept for TTL index and audit)
+    Upsert key : (symbol, scraped_at_minute)
+    TTL field  : scraped_at (exact UTC datetime)
     """
     ops     = []
     now_utc = datetime.now(timezone.utc)
     minute  = _minute_floor(scraped_at)
 
     for q in quotes:
-        set_fields = {
-            "name":             q.get("name"),
-            "sector_code":      q.get("sector_code"),
-            "indices":          q.get("indices"),
-            "ldcp":             q.get("ldcp"),
-            "open":             q.get("open"),
-            "high":             q.get("high"),
-            "low":              q.get("low"),
-            "price":            q.get("price"),
-            "change":           q.get("change"),
-            "change_pct":       q.get("change_pct"),
-            "change_direction": q.get("change_direction"),
-            "volume":           q.get("volume"),
-            "scraped_at":       scraped_at,      # exact UTC — TTL field
-            "updated_at":       now_utc,
-        }
         ops.append(
             pymongo.UpdateOne(
                 {"symbol": q["symbol"], "scraped_at_minute": minute},
                 {
-                    "$set":         set_fields,
+                    "$set": {
+                        "name":             q.get("name"),
+                        "sector_code":      q.get("sector_code"),
+                        "indices":          q.get("indices"),
+                        "ldcp":             q.get("ldcp"),
+                        "open":             q.get("open"),
+                        "high":             q.get("high"),
+                        "low":              q.get("low"),
+                        "price":            q.get("price"),
+                        "change":           q.get("change"),
+                        "change_pct":       q.get("change_pct"),
+                        "change_direction": q.get("change_direction"),
+                        "volume":           q.get("volume"),
+                        "scraped_at":       scraped_at,
+                        "updated_at":       now_utc,
+                    },
                     "$setOnInsert": {"created_at": now_utc},
                 },
                 upsert=True,
@@ -198,21 +284,23 @@ def build_ops(quotes, scraped_at):
 # ---------------------------------------------------------------------------
 
 def run_poll_cycle(collection, session):
-    """
-    One HTTP request → parse → bulk upsert. Returns a summary dict.
-    """
+    """One HTTP request → parse → bulk upsert. Returns a summary dict."""
     cycle_start = time.monotonic()
 
     try:
         quotes, scraped_at = fetch_market_watch(session=session)
     except Exception as exc:
         logger.error("fetch_market_watch failed: %s", exc)
-        return {"symbol_count": 0, "inserted": 0, "updated": 0,
-                "elapsed_s": time.monotonic() - cycle_start, "fetch_error": True}
+        return {
+            "symbol_count": 0, "total_volume": None,
+            "inserted": 0, "updated": 0,
+            "elapsed_s": time.monotonic() - cycle_start,
+            "fetch_error": True,
+        }
 
-    ops      = build_ops(quotes, scraped_at)
-    inserted = 0
-    updated  = 0
+    total_volume = sum(q.get("volume") or 0 for q in quotes)
+    ops          = build_ops(quotes, scraped_at)
+    inserted = updated = 0
 
     if ops:
         try:
@@ -226,6 +314,7 @@ def run_poll_cycle(collection, session):
 
     return {
         "symbol_count": len(quotes),
+        "total_volume": total_volume,
         "inserted":     inserted,
         "updated":      updated,
         "elapsed_s":    time.monotonic() - cycle_start,
@@ -240,8 +329,10 @@ def run_poll_cycle(collection, session):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="PSX market-watch intraday poller.")
-    parser.add_argument("--cycle-seconds", type=float, default=None,
-                        help="Minimum seconds between cycles (default: INTRADAY_POLL_CYCLE_MIN_SECONDS env var or 60)")
+    parser.add_argument(
+        "--cycle-seconds", type=float, default=None,
+        help="Minimum seconds between cycles (default: INTRADAY_POLL_CYCLE_MIN_SECONDS or 60)",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -252,8 +343,14 @@ def main():
     dst_uri        = os.getenv("MONGODB_INTRADAY_URI", "mongodb://127.0.0.1:27017/")
     dst_db_name    = os.getenv("MONGODB_INTRADAY_DB_NAME", "finhisaab_intraday")
     cycle_min_secs = args.cycle_seconds or float(os.getenv("INTRADAY_POLL_CYCLE_MIN_SECONDS", "60"))
+    stasis_thresh  = int(os.getenv("INTRADAY_STASIS_THRESHOLD", "3"))
+    holiday_recheck= float(os.getenv("INTRADAY_HOLIDAY_RECHECK_MIN", "20"))
 
-    logger.info("Starting market-watch poller (cycle floor: %.0fs).", cycle_min_secs)
+    logger.info(
+        "Starting market-watch poller | cycle floor: %.0fs | "
+        "stasis threshold: %d cycles | holiday recheck: %.0f min.",
+        cycle_min_secs, stasis_thresh, holiday_recheck,
+    )
 
     if not test_mongo_connectivity(dst_uri, dst_db_name):
         logger.error("MongoDB unreachable. Exiting.")
@@ -263,11 +360,13 @@ def main():
     collection = dst_client[dst_db_name][INTRADAY_COLLECTION]
     ensure_indexes(collection)
 
+    stasis   = StasisDetector(stasis_thresh, holiday_recheck)
     cycle_number = 0
 
     try:
         with requests.Session() as sess:
             while True:
+                # Layer 1: clock-based sleep (nights, weekends)
                 sleep_until_open()
 
                 secs, _ = seconds_until_next_open()
@@ -275,25 +374,33 @@ def main():
                     continue
 
                 cycle_number += 1
-                logger.info(
-                    "=== Cycle %d | %s PKT ===",
-                    cycle_number, now_pkt().strftime("%H:%M:%S"),
-                )
+                logger.info("=== Cycle %d | %s PKT ===",
+                            cycle_number, now_pkt().strftime("%H:%M:%S"))
 
                 summary = run_poll_cycle(collection, sess)
 
                 logger.info(
-                    "=== Cycle %d done | %.1fs | %d symbols | %d inserted %d updated%s ===",
+                    "=== Cycle %d done | %.1fs | %d symbols | vol=%s | "
+                    "%d inserted %d updated%s ===",
                     cycle_number, summary["elapsed_s"], summary["symbol_count"],
+                    f"{summary['total_volume']:,}" if summary["total_volume"] is not None else "n/a",
                     summary["inserted"], summary["updated"],
                     " | FETCH ERROR" if summary["fetch_error"] else "",
                 )
 
+                # Layer 2: volume-stasis holiday detection
+                if not summary["fetch_error"] and summary["total_volume"] is not None:
+                    stasis.record(summary["total_volume"])
+                    if stasis.is_stale():
+                        stasis.sleep_and_reset()
+                        cycle_number = 0  # reset so logs are readable after each wake
+                        continue
+
+                # Pace to cycle floor
                 remainder = cycle_min_secs - summary["elapsed_s"]
                 if remainder > 0:
                     next_secs, _ = seconds_until_next_open()
                     if next_secs == 0:
-                        logger.debug("Pacing: sleeping %.0fs.", remainder)
                         time.sleep(remainder)
 
     except KeyboardInterrupt:
