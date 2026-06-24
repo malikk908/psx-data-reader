@@ -25,6 +25,8 @@ Env vars:
 Storage: intraday_klines_temp collection.
   Upsert key : (symbol, scraped_at_minute) — one doc per symbol per UTC minute.
   TTL        : scraped_at field, 48 hours.
+  Volume     : raw `volume` is session-cumulative from PSX;
+               derived `volume_delta` is computed from the previous stored snapshot.
 """
 
 import logging
@@ -240,7 +242,73 @@ def _minute_floor(dt_utc):
     return dt_utc.replace(second=0, microsecond=0)
 
 
-def build_ops(quotes, scraped_at):
+def _pkt_date(dt_utc):
+    return dt_utc.astimezone(PKT).date()
+
+
+def load_previous_snapshots(collection, symbols, current_minute):
+    """
+    Return the latest stored snapshot before current_minute for each symbol.
+
+    Uses the existing (symbol, scraped_at_minute) index order so the lookup
+    stays aligned with how documents are keyed in MongoDB.
+    """
+    if not symbols:
+        return {}
+
+    pipeline = [
+        {
+            "$match": {
+                "symbol": {"$in": sorted(set(symbols))},
+                "scraped_at_minute": {"$lt": current_minute},
+            }
+        },
+        {"$sort": {"symbol": 1, "scraped_at_minute": 1}},
+        {
+            "$group": {
+                "_id": "$symbol",
+                "volume": {"$last": "$volume"},
+                "scraped_at_minute": {"$last": "$scraped_at_minute"},
+            }
+        },
+    ]
+
+    previous = {}
+    for doc in collection.aggregate(pipeline):
+        previous[doc["_id"]] = {
+            "volume": doc.get("volume"),
+            "scraped_at_minute": doc.get("scraped_at_minute"),
+        }
+    return previous
+
+
+def compute_volume_delta(current_volume, previous_snapshot, current_minute):
+    """
+    Derive interval volume from cumulative session volume snapshots.
+
+    Returns None when there is no trustworthy prior point, such as:
+      - the first retained snapshot for a symbol
+      - a session/day rollover
+      - a source reset where cumulative volume moved backwards
+    """
+    if current_volume is None or previous_snapshot is None:
+        return None
+
+    previous_volume = previous_snapshot.get("volume")
+    previous_minute = previous_snapshot.get("scraped_at_minute")
+    if previous_volume is None or previous_minute is None:
+        return None
+
+    if _pkt_date(previous_minute) != _pkt_date(current_minute):
+        return None
+
+    if current_volume < previous_volume:
+        return None
+
+    return current_volume - previous_volume
+
+
+def build_ops(quotes, scraped_at, previous_by_symbol):
     """
     Convert quote dicts from fetch_market_watch() into UpdateOne ops.
 
@@ -252,6 +320,11 @@ def build_ops(quotes, scraped_at):
     minute  = _minute_floor(scraped_at)
 
     for q in quotes:
+        volume_delta = compute_volume_delta(
+            q.get("volume"),
+            previous_by_symbol.get(q["symbol"]),
+            minute,
+        )
         ops.append(
             pymongo.UpdateOne(
                 {"symbol": q["symbol"], "scraped_at_minute": minute},
@@ -269,6 +342,7 @@ def build_ops(quotes, scraped_at):
                         "change_pct":       q.get("change_pct"),
                         "change_direction": q.get("change_direction"),
                         "volume":           q.get("volume"),
+                        "volume_delta":     volume_delta,
                         "scraped_at":       scraped_at,
                         "updated_at":       now_utc,
                     },
@@ -300,7 +374,13 @@ def run_poll_cycle(collection, session):
         }
 
     total_volume = sum(q.get("volume") or 0 for q in quotes)
-    ops          = build_ops(quotes, scraped_at)
+    minute       = _minute_floor(scraped_at)
+    previous_by_symbol = load_previous_snapshots(
+        collection,
+        [q["symbol"] for q in quotes if q.get("symbol")],
+        minute,
+    )
+    ops          = build_ops(quotes, scraped_at, previous_by_symbol)
     inserted = updated = 0
 
     if ops:
