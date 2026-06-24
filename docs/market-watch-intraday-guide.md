@@ -92,11 +92,29 @@ For price-alert features:
 - Ignore `open`, `high`, and `low` if the old logic expected minute-candle values
 - Use `volume_delta` only if the feature needs approximate volume movement between snapshots
 
+This means the current consumer is in a safe position if it only used 1-minute candle `close` for alerts before. In this dataset, `price` is the correct replacement for that use case.
+
 For volume-aware logic:
 
 - Use `volume` when you need total traded volume so far in the session
 - Use `volume_delta` when you need incremental volume since the previous stored snapshot
 - Do not treat `volume_delta` as guaranteed exchange-native 1-minute volume
+
+## How `high` And `low` Can Still Be Used
+
+Even though `high` and `low` are not true minute-bar values, they can still be useful as session-level context.
+
+Safe uses:
+
+- Show current session range for a symbol
+- Detect whether current `price` is near the session high or session low
+- Support UI context such as "trading near day high" or "off session low by X%"
+
+Unsafe uses:
+
+- Building 1-minute breakout logic from `high` or `low`
+- Treating them as minute-high or minute-low values
+- Mixing them into candle-based analytics that assume OHLC belongs to one exact interval
 
 ## Migration Notes For Teams Coming From 1m OHLCV
 
