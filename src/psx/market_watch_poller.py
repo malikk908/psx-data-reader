@@ -34,7 +34,7 @@ Env vars:
 
 Storage: intraday_klines_temp collection.
   Upsert key : (symbol, scraped_at_minute) — one doc per symbol per UTC minute.
-  TTL        : scraped_at field, 48 hours.
+  scraped_at : exact UTC scrape timestamp, kept for ordering and freshness checks.
   Volume     : raw `volume` is session-cumulative from PSX;
                derived `volume_delta` is computed from the previous stored snapshot.
 """
@@ -97,21 +97,11 @@ def test_mongo_connectivity(connection_string, db_name):
 
 
 def ensure_indexes(collection):
-    """
-    Create indexes on intraday_klines_temp. Idempotent — safe to call every startup.
-
-    1. Unique compound (symbol, scraped_at_minute) — upsert key.
-    2. TTL on scraped_at (UTC datetime) — auto-purge after 48 h.
-    """
+    """Create indexes on intraday_klines_temp. Idempotent — safe to call every startup."""
     collection.create_index(
         [("symbol", pymongo.ASCENDING), ("scraped_at_minute", pymongo.ASCENDING)],
         unique=True,
         name="symbol_minute_unique",
-    )
-    collection.create_index(
-        [("scraped_at", pymongo.ASCENDING)],
-        expireAfterSeconds=172800,  # 48 h
-        name="scraped_at_ttl",
     )
     logger.info("Indexes ensured on %s.", INTRADAY_COLLECTION)
 
@@ -390,7 +380,6 @@ def build_ops(quotes, scraped_at, previous_by_symbol):
     Convert quote dicts from fetch_market_watch() into UpdateOne ops.
 
     Upsert key : (symbol, scraped_at_minute)
-    TTL field  : scraped_at (exact UTC datetime)
     """
     ops     = []
     now_utc = datetime.now(timezone.utc)
