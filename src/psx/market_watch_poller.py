@@ -18,9 +18,9 @@ Market closure detection (two layers):
      the next scheduled clock-open so we never sleep past the next trading day.
 
 Session schedule (PKT):
-  Mon–Thu : 09:25 open → 15:50 cutoff  (15:30 official close + 20 min data buffer)
-  Friday  : 09:25 open → 12:01 break → 14:30 resume → 16:50 cutoff
-            (16:30 official close + 20 min data buffer)
+  Mon–Thu : 09:25 open → 15:55 cutoff  (15:30 official close + 25 min data buffer)
+  Friday  : 09:25 open → 12:01 break → 14:30 resume → 16:55 cutoff
+            (16:30 official close + 25 min data buffer)
 
 Env vars:
     MONGODB_INTRADAY_URI          destination MongoDB URI
@@ -64,12 +64,12 @@ logger = logging.getLogger(__name__)
 
 PKT          = timezone(timedelta(hours=5))
 MARKET_OPEN  = time_type(9, 25)    # 5-min warmup before official 09:30 open
-MARKET_CLOSE = time_type(15, 50)   # official 15:30 close + 20 min data-delay buffer
+MARKET_CLOSE = time_type(15, 55)   # official 15:30 close + 25 min data-delay buffer
 
 # Friday Jumu'ah break + 1-hour extended session
 FRIDAY_BREAK_START = time_type(12, 1)
 FRIDAY_BREAK_END   = time_type(14, 30)
-FRIDAY_CLOSE       = time_type(16, 50)  # official 16:30 close + 20 min data-delay buffer
+FRIDAY_CLOSE       = time_type(16, 55)  # official 16:30 close + 25 min data-delay buffer
 
 INTRADAY_COLLECTION = "intraday_klines_temp"
 
@@ -139,9 +139,9 @@ def seconds_until_next_open():
     Friday schedule (PKT):
       09:25–12:01  first session
       12:01–14:30  Jumu'ah break  → sleeps until 14:30
-      14:30–16:50  second session
+      14:30–16:55  second session
     Mon–Thu schedule:
-      09:25–15:50  single session  (15:30 official + 20 min data buffer)
+      09:25–15:55  single session  (15:30 official + 25 min data buffer)
     """
     now = now_pkt()
     wd  = now.weekday()   # 0=Mon … 4=Fri, 5=Sat, 6=Sun
