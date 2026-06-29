@@ -9,11 +9,18 @@ Usage:
 
 Market closure detection (two layers):
   1. Clock-based  — sleeps overnight and on weekends using PKT market hours.
+     Friday has a Jumu'ah break (12:01–14:30 PKT) and a 1-hour extended
+     session; the poller sleeps through the break and resumes at 14:30.
   2. Volume-stasis — during clock-open hours, if total market volume is
      identical across STASIS_THRESHOLD consecutive cycles the market is
      assumed to be on a public holiday or unexpected halt. The poller backs
      off for HOLIDAY_RECHECK_MINUTES before rechecking. Max backoff caps at
      the next scheduled clock-open so we never sleep past the next trading day.
+
+Session schedule (PKT):
+  Mon–Thu : 09:25 open → 15:50 cutoff  (15:30 official close + 20 min data buffer)
+  Friday  : 09:25 open → 12:01 break → 14:30 resume → 16:50 cutoff
+            (16:30 official close + 20 min data buffer)
 
 Env vars:
     MONGODB_INTRADAY_URI          destination MongoDB URI
@@ -56,8 +63,13 @@ from psx.market_watch_scraper import fetch_market_watch
 logger = logging.getLogger(__name__)
 
 PKT          = timezone(timedelta(hours=5))
-MARKET_OPEN  = time_type(9, 25)   # 5-min warmup before official 09:30 open
-MARKET_CLOSE = time_type(15, 30)
+MARKET_OPEN  = time_type(9, 25)    # 5-min warmup before official 09:30 open
+MARKET_CLOSE = time_type(15, 50)   # official 15:30 close + 20 min data-delay buffer
+
+# Friday Jumu'ah break + 1-hour extended session
+FRIDAY_BREAK_START = time_type(12, 1)
+FRIDAY_BREAK_END   = time_type(14, 30)
+FRIDAY_CLOSE       = time_type(16, 50)  # official 16:30 close + 20 min data-delay buffer
 
 INTRADAY_COLLECTION = "intraday_klines_temp"
 
@@ -112,31 +124,65 @@ def now_pkt():
     return datetime.now(timezone.utc).astimezone(PKT)
 
 
+def session_close_dt():
+    """Return the PKT datetime of today's collection cutoff (close + data buffer)."""
+    now = now_pkt()
+    close = FRIDAY_CLOSE if now.weekday() == 4 else MARKET_CLOSE
+    return now.replace(hour=close.hour, minute=close.minute, second=0, microsecond=0)
+
+
 def seconds_until_next_open():
     """
     Return (seconds_float, reason_str).
-    Returns (0, 'open') when the clock says the market should be open.
+    Returns (0, 'open') when the clock says the market should be accepting data.
+
+    Friday schedule (PKT):
+      09:25–12:01  first session
+      12:01–14:30  Jumu'ah break  → sleeps until 14:30
+      14:30–16:50  second session
+    Mon–Thu schedule:
+      09:25–15:50  single session  (15:30 official + 20 min data buffer)
     """
     now = now_pkt()
     wd  = now.weekday()   # 0=Mon … 4=Fri, 5=Sat, 6=Sun
     t   = now.time().replace(second=0, microsecond=0)
 
-    if wd <= 4 and MARKET_OPEN <= t < MARKET_CLOSE:
-        return (0.0, "open")
-
-    if wd <= 4 and t < MARKET_OPEN:
-        next_open = now.replace(hour=9, minute=25, second=0, microsecond=0)
-    elif wd <= 3 and t >= MARKET_CLOSE:
-        next_open = (now + timedelta(days=1)).replace(hour=9, minute=25, second=0, microsecond=0)
-    elif wd == 4 and t >= MARKET_CLOSE:
-        next_open = (now + timedelta(days=3)).replace(hour=9, minute=25, second=0, microsecond=0)
-    elif wd == 5:
+    # Weekend
+    if wd == 5:   # Saturday → Monday
         next_open = (now + timedelta(days=2)).replace(hour=9, minute=25, second=0, microsecond=0)
-    else:
+        return (max((next_open - now).total_seconds(), 0.0),
+                f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT")
+    if wd == 6:   # Sunday → Monday
         next_open = (now + timedelta(days=1)).replace(hour=9, minute=25, second=0, microsecond=0)
+        return (max((next_open - now).total_seconds(), 0.0),
+                f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT")
 
-    seconds = (next_open - now).total_seconds()
-    return (max(seconds, 0.0), f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT")
+    # Weekday: before open
+    if t < MARKET_OPEN:
+        next_open = now.replace(hour=9, minute=25, second=0, microsecond=0)
+        return (max((next_open - now).total_seconds(), 0.0),
+                f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT")
+
+    # Friday-specific logic
+    if wd == 4:
+        if FRIDAY_BREAK_START <= t < FRIDAY_BREAK_END:
+            next_open = now.replace(hour=FRIDAY_BREAK_END.hour, minute=FRIDAY_BREAK_END.minute,
+                                    second=0, microsecond=0)
+            return (max((next_open - now).total_seconds(), 0.0),
+                    f"Jumu'ah break — resuming {next_open.strftime('%H:%M')} PKT")
+        if t >= FRIDAY_CLOSE:
+            next_open = (now + timedelta(days=3)).replace(hour=9, minute=25, second=0, microsecond=0)
+            return (max((next_open - now).total_seconds(), 0.0),
+                    f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT")
+        return (0.0, "open")   # 09:25–12:01 or 14:30–16:50
+
+    # Mon–Thu
+    if t >= MARKET_CLOSE:
+        next_open = (now + timedelta(days=1)).replace(hour=9, minute=25, second=0, microsecond=0)
+        return (max((next_open - now).total_seconds(), 0.0),
+                f"next open {next_open.strftime('%a %Y-%m-%d %H:%M')} PKT")
+
+    return (0.0, "open")
 
 
 def _chunked_sleep(target_utc):
@@ -243,10 +289,8 @@ class StasisDetector:
             sleep_secs = clock_secs
             label      = "clock-open"
         else:
-            # Cap recheck at whatever time remains until clock-close,
-            # so we never accidentally sleep past 15:30 on a thin trading day
-            close_dt = now_pkt().replace(hour=15, minute=30, second=0, microsecond=0)
-            secs_to_close = (close_dt - now_pkt()).total_seconds()
+            # Cap recheck so we never accidentally sleep past today's session cutoff
+            secs_to_close = (session_close_dt() - now_pkt()).total_seconds()
             sleep_secs = min(recheck_secs, max(secs_to_close, 60))
             label      = "holiday/halt recheck"
 
