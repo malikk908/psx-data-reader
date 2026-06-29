@@ -19,8 +19,11 @@ Env vars:
     MONGODB_INTRADAY_URI          destination MongoDB URI
     MONGODB_INTRADAY_DB_NAME      destination database name (default: finhisaab_intraday)
     INTRADAY_POLL_CYCLE_MIN_SECONDS   floor between cycles in seconds (default: 60)
-    INTRADAY_STASIS_THRESHOLD     frozen cycles before holiday sleep (default: 3)
-    INTRADAY_HOLIDAY_RECHECK_MIN  minutes to sleep when stasis detected (default: 20)
+    INTRADAY_STASIS_THRESHOLD     frozen cycles to start the stasis clock (default: 3)
+    INTRADAY_STASIS_MIN_MINUTES   wall-clock minutes volume must stay frozen before
+                                  acting; prevents false positives from brief halts
+                                  (default: 20)
+    INTRADAY_HOLIDAY_RECHECK_MIN  minutes to sleep when stasis confirmed (default: 20)
 
 Storage: intraday_klines_temp collection.
   Upsert key : (symbol, scraped_at_minute) — one doc per symbol per UTC minute.
@@ -168,8 +171,14 @@ class StasisDetector:
     """
     Tracks total market volume across recent cycles.
 
-    If the last `threshold` cycles all report the same total volume the market
-    is assumed to be on a public holiday or in an unexpected halt.
+    Detection is two-stage to avoid false positives from brief trading halts:
+
+    Stage 1 — cycle gate: the last `threshold` cycles must all report the same
+      total volume (and volume > 0 to exclude the pre-open window).
+
+    Stage 2 — wall-clock gate: once Stage 1 trips, a timer starts. Stasis is
+      only confirmed after `min_stasis_minutes` of continuously frozen volume.
+      Any movement in volume resets both stages.
 
     Only active during clock-open hours — the clock-based sleep handles
     nights and weekends, so stasis detection is the second layer for holidays.
@@ -180,10 +189,12 @@ class StasisDetector:
       - resets its history so the next cycle starts fresh.
     """
 
-    def __init__(self, threshold, recheck_minutes):
-        self.threshold        = threshold
-        self.recheck_minutes  = recheck_minutes
-        self._recent_volumes  = deque(maxlen=threshold)
+    def __init__(self, threshold, recheck_minutes, min_stasis_minutes=20):
+        self.threshold          = threshold
+        self.recheck_minutes    = recheck_minutes
+        self.min_stasis_minutes = min_stasis_minutes
+        self._recent_volumes    = deque(maxlen=threshold)
+        self._stasis_since      = None  # UTC time when Stage 1 first tripped
 
     def record(self, total_volume):
         """Call after every successful cycle with the sum of all symbol volumes."""
@@ -191,16 +202,34 @@ class StasisDetector:
 
     def is_stale(self):
         """
-        True when we have enough samples and every one is identical.
-        Guards against the pre-open window (09:25-09:30) by requiring
-        volume > 0 — a zero-volume market is pre-open, not a holiday.
+        True when Stage 1 (cycle gate) and Stage 2 (wall-clock gate) are both met.
+        Resets the wall-clock timer whenever volume moves again.
         """
         if len(self._recent_volumes) < self.threshold:
             return False
         volumes = list(self._recent_volumes)
         if volumes[0] == 0:
             return False  # pre-open, no trades yet
-        return len(set(volumes)) == 1
+
+        if len(set(volumes)) != 1:
+            # Volume moved — reset the timer so a future freeze starts fresh
+            if self._stasis_since is not None:
+                logger.debug("Volume moved; stasis timer reset.")
+                self._stasis_since = None
+            return False
+
+        # Stage 1 passed — start (or continue) the wall-clock gate
+        now = datetime.now(timezone.utc)
+        if self._stasis_since is None:
+            self._stasis_since = now
+            logger.info(
+                "Volume stasis Stage 1: %d consecutive frozen cycles. "
+                "Waiting %.0f min wall-clock before acting.",
+                self.threshold, self.min_stasis_minutes,
+            )
+
+        elapsed_min = (now - self._stasis_since).total_seconds() / 60
+        return elapsed_min >= self.min_stasis_minutes
 
     def sleep_and_reset(self):
         """
@@ -216,22 +245,26 @@ class StasisDetector:
         else:
             # Cap recheck at whatever time remains until clock-close,
             # so we never accidentally sleep past 15:30 on a thin trading day
-            now_t   = now_pkt().time().replace(second=0, microsecond=0)
             close_dt = now_pkt().replace(hour=15, minute=30, second=0, microsecond=0)
             secs_to_close = (close_dt - now_pkt()).total_seconds()
             sleep_secs = min(recheck_secs, max(secs_to_close, 60))
             label      = "holiday/halt recheck"
 
         target_utc = datetime.now(timezone.utc) + timedelta(seconds=sleep_secs)
+        elapsed_min = (
+            (datetime.now(timezone.utc) - self._stasis_since).total_seconds() / 60
+            if self._stasis_since else 0
+        )
         logger.warning(
-            "Volume stasis detected across %d cycles — possible holiday or halt. "
-            "Sleeping %.0f min (%s) until ~%s PKT.",
-            self.threshold, sleep_secs / 60, label,
+            "Volume stasis confirmed — frozen for %.0f min across %d cycles. "
+            "Possible holiday or halt. Sleeping %.0f min (%s) until ~%s PKT.",
+            elapsed_min, self.threshold, sleep_secs / 60, label,
             target_utc.astimezone(PKT).strftime("%H:%M"),
         )
         _chunked_sleep(target_utc)
         logger.info("Recheck after stasis sleep — resuming polling.")
         self._recent_volumes.clear()
+        self._stasis_since = None
 
 
 # ---------------------------------------------------------------------------
@@ -421,13 +454,14 @@ def main():
     dst_db_name     = os.getenv("MONGODB_INTRADAY_DB_NAME", "finhisaab_intraday")
     cycle_min_secs  = float(os.getenv("INTRADAY_POLL_CYCLE_MIN_SECONDS", "90"))
     cycle_max_secs  = float(os.getenv("INTRADAY_POLL_CYCLE_MAX_SECONDS", "150"))
-    stasis_thresh   = int(os.getenv("INTRADAY_STASIS_THRESHOLD", "3"))
-    holiday_recheck = float(os.getenv("INTRADAY_HOLIDAY_RECHECK_MIN", "20"))
+    stasis_thresh       = int(os.getenv("INTRADAY_STASIS_THRESHOLD", "3"))
+    stasis_min_minutes  = float(os.getenv("INTRADAY_STASIS_MIN_MINUTES", "20"))
+    holiday_recheck     = float(os.getenv("INTRADAY_HOLIDAY_RECHECK_MIN", "20"))
 
     logger.info(
         "Starting market-watch poller | cycle range: %.0f–%.0fs | "
-        "stasis threshold: %d cycles | holiday recheck: %.0f min.",
-        cycle_min_secs, cycle_max_secs, stasis_thresh, holiday_recheck,
+        "stasis: %d cycles + %.0f min wall-clock | holiday recheck: %.0f min.",
+        cycle_min_secs, cycle_max_secs, stasis_thresh, stasis_min_minutes, holiday_recheck,
     )
 
     if not test_mongo_connectivity(dst_uri, dst_db_name):
@@ -438,7 +472,7 @@ def main():
     collection = dst_client[dst_db_name][INTRADAY_COLLECTION]
     ensure_indexes(collection)
 
-    stasis   = StasisDetector(stasis_thresh, holiday_recheck)
+    stasis   = StasisDetector(stasis_thresh, holiday_recheck, stasis_min_minutes)
     cycle_number = 0
 
     try:
