@@ -6,13 +6,17 @@ source of truth for both recovery and idempotent retries.
 """
 
 import argparse
+import atexit
 import logging
+import multiprocessing
+from multiprocessing import util
 import os
 import socket
 import threading
 import time
 import uuid
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
+from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass, replace
 from datetime import datetime, time as time_type, timedelta, timezone
 
@@ -46,6 +50,11 @@ UTC = timezone.utc
 PKT = timezone(timedelta(hours=5))
 EOD_CLOSE = time_type(16, 55)
 FRIDAY_EOD_CLOSE = time_type(16, 55)
+TECHNICAL_EXECUTION_MODES = ("sync", "thread", "process")
+
+_PROCESS_TECHNICAL_WRITER = None
+_PROCESS_MONGO_CLIENTS = ()
+_PROCESS_CLIENT_FINALIZER = None
 
 
 class LeaseLostError(RuntimeError):
@@ -68,6 +77,58 @@ def _positive_int(value, name):
     if result <= 0:
         raise ValueError(f"{name} must be greater than zero")
     return result
+
+
+def _technical_execution_mode(value):
+    mode = str(value).strip().lower()
+    if mode not in TECHNICAL_EXECUTION_MODES:
+        allowed = ", ".join(TECHNICAL_EXECUTION_MODES)
+        raise ValueError(f"technical execution mode must be one of: {allowed}")
+    return mode
+
+
+def _close_process_clients():
+    global _PROCESS_MONGO_CLIENTS
+    for client in _PROCESS_MONGO_CLIENTS:
+        client.close()
+    _PROCESS_MONGO_CLIENTS = ()
+
+
+def _initialize_process_technical_writer(company_data_uri, company_data_db_name, primary_uri, primary_db_name):
+    """Create process-local Mongo handles; parent handles are never shared."""
+    global _PROCESS_TECHNICAL_WRITER, _PROCESS_MONGO_CLIENTS, _PROCESS_CLIENT_FINALIZER
+
+    company_client = MongoClient(company_data_uri, serverSelectionTimeoutMS=5000)
+    primary_client = MongoClient(primary_uri, serverSelectionTimeoutMS=5000)
+    try:
+        company_client.admin.command("ping")
+        primary_client.admin.command("ping")
+        _PROCESS_MONGO_CLIENTS = (company_client, primary_client)
+        _PROCESS_TECHNICAL_WRITER = build_intraday_technical_writer_from_databases(
+            company_client[company_data_db_name],
+            primary_client[primary_db_name],
+        )
+        # multiprocessing workers exit through multiprocessing.util, so keep a
+        # finalizer in addition to atexit for explicit client cleanup.
+        _PROCESS_CLIENT_FINALIZER = util.Finalize(
+            None, _close_process_clients, exitpriority=10
+        )
+        atexit.register(_close_process_clients)
+    except Exception:
+        company_client.close()
+        primary_client.close()
+        raise
+
+
+def _process_compute_and_save(task):
+    timeframe, symbol, computed_at = task
+    if _PROCESS_TECHNICAL_WRITER is None:
+        raise RuntimeError("technical process worker was not initialized")
+    return _PROCESS_TECHNICAL_WRITER.compute_and_save(
+        symbol,
+        timeframe,
+        computed_at=computed_at,
+    )
 
 
 def company_data_database_settings(environ=None):
@@ -101,10 +162,16 @@ class WorkerConfig:
     lease_ttl_seconds: float = 120.0
     lease_renew_interval_seconds: float = 30.0
     technical_workers: int = 4
+    # Direct construction defaults to thread mode so unit-test collaborators
+    # remain injectable. Environment-configured workers default to processes.
+    technical_execution_mode: str = "thread"
     symbol_batch_size: int = DEFAULT_SYMBOL_BATCH_SIZE
     incremental_window_minutes: int = 20
     eod_check_interval_seconds: float = 60.0
     closed_poll_interval_seconds: float = 60.0
+
+    def __post_init__(self):
+        _technical_execution_mode(self.technical_execution_mode)
 
     @classmethod
     def from_env(cls, environ=None):
@@ -139,6 +206,9 @@ class WorkerConfig:
             technical_workers=_positive_int(
                 environ.get("INTRADAY_COMPUTE_TECHNICAL_WORKERS", "4"),
                 "INTRADAY_COMPUTE_TECHNICAL_WORKERS",
+            ),
+            technical_execution_mode=_technical_execution_mode(
+                environ.get("INTRADAY_COMPUTE_TECHNICAL_EXECUTION_MODE", "process")
             ),
             symbol_batch_size=_positive_int(
                 environ.get("INTRADAY_COMPUTE_SYMBOL_BATCH_SIZE", str(DEFAULT_SYMBOL_BATCH_SIZE)),
@@ -224,6 +294,9 @@ class IntradayComputeWorker:
         monotonic=time.monotonic,
         sleeper=time.sleep,
         lease_renewer_factory=LeaseRenewer,
+        process_pool_factory=ProcessPoolExecutor,
+        process_task=_process_compute_and_save,
+        shutdown_callbacks=(),
     ):
         self.state = state
         self.materializer = materializer
@@ -234,7 +307,39 @@ class IntradayComputeWorker:
         self.monotonic = monotonic
         self.sleeper = sleeper
         self.lease_renewer_factory = lease_renewer_factory
+        self.process_pool_factory = process_pool_factory
+        self.process_task = process_task
+        self.shutdown_callbacks = list(shutdown_callbacks)
+        self._technical_process_pool = None
+        self._shutdown = False
         self._last_eod_check = 0.0
+
+    def _technical_process_executor(self):
+        if self._technical_process_pool is None:
+            self._technical_process_pool = self.process_pool_factory(
+                max_workers=self.config.technical_workers,
+                initializer=_initialize_process_technical_writer,
+                initargs=(
+                    self.config.company_data_uri,
+                    self.config.company_data_db_name,
+                    self.config.primary_uri,
+                    self.config.primary_db_name,
+                ),
+                mp_context=multiprocessing.get_context("spawn"),
+            )
+        return self._technical_process_pool
+
+    def shutdown(self):
+        """Stop reusable technical workers before closing parent Mongo clients."""
+        if self._shutdown:
+            return
+        self._shutdown = True
+        try:
+            if self._technical_process_pool is not None:
+                self._technical_process_pool.shutdown(wait=True, cancel_futures=True)
+        finally:
+            for callback in self.shutdown_callbacks:
+                callback()
 
     @staticmethod
     def _as_utc(value):
@@ -257,36 +362,85 @@ class IntradayComputeWorker:
         if not pairs:
             return {"pairCount": 0, "written": 0}
 
+        mode = _technical_execution_mode(self.config.technical_execution_mode)
+        if mode == "sync":
+            written = 0
+            for timeframe, symbol in pairs:
+                lease.ensure()
+                self.technical_writer.compute_and_save(
+                    symbol,
+                    timeframe,
+                    computed_at=computed_at,
+                )
+                written += 1
+            return {"pairCount": len(pairs), "written": written}
+
         written = 0
         pair_iterator = iter(pairs)
-        with ThreadPoolExecutor(max_workers=self.config.technical_workers) as executor:
-            pending = {}
+        if mode == "process":
+            executor = self._technical_process_executor()
+        else:
+            executor = ThreadPoolExecutor(max_workers=self.config.technical_workers)
+        pending = {}
+        failure = None
 
-            def submit_next():
-                try:
-                    timeframe, symbol = next(pair_iterator)
-                except StopIteration:
-                    return False
+        def submit_next():
+            try:
+                timeframe, symbol = next(pair_iterator)
+            except StopIteration:
+                return False
+            if mode == "process":
+                future = executor.submit(
+                    self.process_task,
+                    (timeframe, symbol, computed_at),
+                )
+            else:
                 future = executor.submit(
                     self.technical_writer.compute_and_save,
                     symbol,
                     timeframe,
                     computed_at=computed_at,
                 )
-                pending[future] = (timeframe, symbol)
-                return True
+            pending[future] = (timeframe, symbol)
+            return True
 
+        try:
             for _ in range(self.config.technical_workers):
-                if not submit_next():
+                try:
+                    if not submit_next():
+                        break
+                except Exception as exc:
+                    failure = exc
                     break
             while pending:
                 completed, _ = wait(pending, return_when=FIRST_COMPLETED)
                 for future in completed:
                     pending.pop(future)
-                    lease.ensure()
-                    future.result()
-                    written += 1
-                    submit_next()
+                    if failure is None:
+                        try:
+                            lease.ensure()
+                        except Exception as exc:
+                            failure = exc
+                    try:
+                        future.result()
+                    except Exception as exc:
+                        if failure is None:
+                            failure = exc
+                    else:
+                        if failure is None:
+                            written += 1
+                            try:
+                                submit_next()
+                            except Exception as exc:
+                                failure = exc
+            if failure is not None:
+                if mode == "process" and isinstance(failure, BrokenProcessPool):
+                    executor.shutdown(wait=True, cancel_futures=True)
+                    self._technical_process_pool = None
+                raise failure
+        finally:
+            if mode == "thread":
+                executor.shutdown(wait=True)
         return {"pairCount": len(pairs), "written": written}
 
     def _process_generation(self, state_document, lease):
@@ -544,12 +698,14 @@ def build_worker(config):
         state.ensure_indexes()
         materializer.ensure_indexes()
         technical_writer.ensure_indexes()
-        return IntradayComputeWorker(
+        worker = IntradayComputeWorker(
             state,
             materializer,
             technical_writer,
             config,
-        ), company_client, primary_client
+            shutdown_callbacks=(company_client.close, primary_client.close),
+        )
+        return worker, company_client, primary_client
     except Exception:
         company_client.close()
         if primary_client is not None:
@@ -568,6 +724,11 @@ def parse_args(argv=None):
     parser.add_argument("--poll-interval", type=float, help="override state polling interval in seconds")
     parser.add_argument("--retry-interval", type=float, help="override failed-cycle retry interval in seconds")
     parser.add_argument("--technical-workers", type=int, help="override bounded technical write concurrency")
+    parser.add_argument(
+        "--technical-execution-mode",
+        choices=TECHNICAL_EXECUTION_MODES,
+        help="override technical pair execution (default: configured process mode)",
+    )
     return parser.parse_args(argv)
 
 
@@ -581,6 +742,8 @@ def main(argv=None):
         overrides["retry_interval_seconds"] = _positive_float(args.retry_interval, "--retry-interval")
     if args.technical_workers is not None:
         overrides["technical_workers"] = _positive_int(args.technical_workers, "--technical-workers")
+    if args.technical_execution_mode is not None:
+        overrides["technical_execution_mode"] = args.technical_execution_mode
     if overrides:
         config = replace(config, **overrides)
 
@@ -606,8 +769,7 @@ def main(argv=None):
         logger.info("Interrupted. Shutting down.")
         return 0
     finally:
-        company_client.close()
-        primary_client.close()
+        worker.shutdown()
 
 
 if __name__ == "__main__":
