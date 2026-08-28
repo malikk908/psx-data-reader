@@ -7,7 +7,7 @@
 | 0 | Complete | Architecture, ownership, contracts, and release gates documented here. |
 | 1 | Complete | Durable Python candle materialization, reconciliation, retention, generation state, and parity tests. |
 | 2 | Complete | Python intraday technical-snapshot parity engine, writer contract, and deterministic parity tests. |
-| 3 | Pending | Dedicated coalescing compute worker, operational controls, and benchmarks. |
+| 3 | Complete | Dedicated coalescing compute worker, operational controls, and local sustained benchmarks. |
 | 4 | Pending | Direct production cutover and removal of backend stock intraday jobs. |
 
 ## Purpose
@@ -349,11 +349,36 @@ The first local thread preflight measured 10 symbols x 6 timeframes x 500
 candles in 4.4813 seconds (13.39 pairs/second); the default 500-symbol run
 exceeded the 120-second command limit. This documented GIL bottleneck is why
 process mode is now the production default for environment-configured workers.
-The process-mode result still must be recorded per target environment before
-Phase 3 can be marked complete. The local process preflight measured 500
+The process-mode result must be recorded per target environment before
+Phase 3 is marked complete. The local process preflight measured 500
 symbols x 6 timeframes x 500 candles in 50.1922 seconds (59.77 pairs/second),
 which is within the 90-second minimum poll interval for CPU-only work but does
 not include MongoDB reads/writes, memory pressure, or sustained generation lag.
+
+The repeatable live harness is `python -m psx.live_intraday_benchmark`. Its
+`eod` mode rebuilds a full copied trading date; its `sustained` mode appends
+local-only poll updates and runs repeated real incremental generations. Both
+modes use the isolated benchmark MongoDB and never write to the source URI.
+
+The local MongoDB gate was run on 2026-08-29 against a copied 2026-08-28
+trading date containing 72,474 raw snapshots across 494 symbols. EOD
+reconciliation completed in 68.272 seconds, persisted 2,964 technical pairs,
+and peaked at 179.15 MB of Python allocations. Five sustained incremental
+cycles completed in 90.9682 seconds total; each cycle converged with generation
+lag 1 and raw lag 0 seconds, persisted 2,964 technical pairs and 2,964 candle
+writes, and peaked at 85.62 MB. The sustained run's MongoDB server operation
+delta was 14,870 queries, 2,434 getmores, 2,470 inserts, 29,640 updates, and
+15,058 commands. The operation counters are collected from local MongoDB's
+`serverStatus` delta and include the worker's process-local clients.
+
+The copied market data contains flat, zero-volume bars for 115 symbol/timeframe
+groups. ADX therefore takes the existing safe nullable fallback and emits
+zero-division warnings, but no generation fails and all expected snapshots are
+written. This is an input edge case, not a worker convergence failure.
+
+These results satisfy the Phase 3 local performance gates. Production cutover
+remains Phase 4 and requires the deployment-specific connectivity, index,
+parity, rollback, and API verification steps below.
 
 ### Phase 4: Backend cutover
 
