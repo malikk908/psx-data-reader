@@ -1,0 +1,154 @@
+{
+  "name": "backend technicalindicators v3.1.0 trending series",
+  "symbol": "FIXTURE",
+  "length": 60,
+  "startDate": "2026-01-01T00:00:00+00:00",
+  "close": {
+    "base": 100,
+    "step": 0.7,
+    "sineAmplitude": 2,
+    "sineDivisor": 3
+  },
+  "ohlc": {
+    "openOffset": -0.4,
+    "highOffset": 1.2,
+    "highCycle": 4,
+    "highCycleStep": 0.1,
+    "lowOffset": -1.1,
+    "lowCycle": 3,
+    "lowCycleStep": 0.1
+  },
+  "volume": {
+    "base": 1000,
+    "step": 17
+  },
+  "expected": {
+    "movingAverages": {
+      "ema10": 138.0975,
+      "ema20": 134.4896,
+      "ema30": 131.0075,
+      "ema50": 124.0798,
+      "ema100": null,
+      "ema200": null,
+      "sma10": 137.3927,
+      "sma20": 134.7318,
+      "sma30": 130.8543,
+      "sma50": 123.9627,
+      "sma100": null,
+      "sma200": null,
+      "hma9": 142.6288,
+      "vwma20": 134.9105
+    },
+    "momentum": {
+      "rsi14": 100,
+      "macd": {"value": 4.9446, "signal": 4.7239, "histogram": 0.2207},
+      "cci20": 183.1093,
+      "momentum10": 9.6291,
+      "roc10": 7.2329,
+      "awesomeOscillator": 10.6259,
+      "stochastic": {"k14": 88.0723, "d14": 87.6572},
+      "stochasticRsi": {"k14": 0, "d14": 0},
+      "williamsR14": -11.9277,
+      "ultimateOscillator": 47.9705,
+      "bullPower50": 20.1785,
+      "bearPower50": 17.3785
+    },
+    "bands": {
+      "bollinger": {
+        "upper": 141.8883,
+        "middle": 134.7318,
+        "lower": 127.5752,
+        "bandwidthPct": 10.6234,
+        "bandwidthChangePct": 6.2423,
+        "bandwidthPercentile120D": null,
+        "percentB": 106.0783
+      }
+    },
+    "volatility": {
+      "atr7": 2.6297,
+      "atr7Pct": 1.8421,
+      "atr14": 2.6024,
+      "atr14Pct": 1.8229,
+      "atr14ChangePct": 0.5875,
+      "atr21": 2.5939,
+      "atr21Pct": 1.817,
+      "dailyRangePct": 1.9614,
+      "historicalVolatility20D": 5.4646,
+      "historicalVolatility50D": 6.1191
+    },
+    "priceStructure": {
+      "high20D": 144.2583,
+      "high30D": 144.2583,
+      "high50D": 144.2583,
+      "high52W": null,
+      "low20D": 128.1879,
+      "low30D": 118.812,
+      "low50D": 105.3974,
+      "low52W": null,
+      "distanceFromHigh20DPct": -1.0398,
+      "distanceFromHigh30DPct": -1.0398,
+      "distanceFromHigh50DPct": -1.0398,
+      "distanceFromHigh52WPct": null,
+      "distanceFromLow20DPct": 11.3665,
+      "distanceFromLow30DPct": 20.1548,
+      "distanceFromLow50DPct": 35.4477,
+      "distanceFromLow52WPct": null,
+      "rangePosition20DPct": 90.6663,
+      "rangePosition30DPct": 94.1054,
+      "rangePosition50DPct": 96.1402,
+      "rangePosition52WPct": null
+    },
+    "volume": {
+      "avgVolume10D": 1927,
+      "avgVolume20D": 1842,
+      "avgVolume50D": 1587,
+      "avgVolume10DVs50D": 1.2143,
+      "relativeVolume20D": 1.0877,
+      "relativeVolume50D": 1.2625
+    },
+    "volumeFlow": {"obv": 89090, "obvSlope20D": 1841.5, "cmf20D": -0.0564},
+    "trendStrength": {"adx14": 99.8008, "plusDI14": 32.5092, "minusDI14": 0.0115},
+    "pivots": {
+      "classic": {"asOf": "2026-02-28T00:00:00+00:00", "pivot": 141.5969, "support": [140.2636, 138.9969, 137.6636], "resistance": [142.8636, 144.1969, 145.4636]},
+      "fibonacci": {"asOf": "2026-02-28T00:00:00+00:00", "pivot": 141.5969, "support": [140.6037, 139.9901, 138.9969], "resistance": [142.5901, 143.2037, 144.1969]},
+      "demark": {"asOf": "2026-02-28T00:00:00+00:00", "pivot": 141.9303, "support": [140.9303, null, null], "resistance": [143.5303, null, null]}
+    },
+    "ratings": {
+      "overall": {"score": null, "label": null, "buyCount": null, "sellCount": null, "neutralCount": null},
+      "movingAverages": {"score": null, "label": null, "buyCount": null, "sellCount": null, "neutralCount": null},
+      "oscillators": {"score": 0.1818, "label": "Buy", "buyCount": 3, "sellCount": 1, "neutralCount": 7}
+    },
+    "derived": {
+      "distanceFromEma20Pct": 6.1482,
+      "distanceFromEma50Pct": 15.0537,
+      "distanceFromEma200Pct": null,
+      "distanceFromSma20Pct": 5.9574,
+      "distanceFromSma50Pct": 15.1623,
+      "distanceFromSma200Pct": null,
+      "sma50Slope20DPct": null,
+      "sma200Slope20DPct": null,
+      "ema200Slope20DPct": null
+    },
+    "signals": {
+      "isAboveEma50": true,
+      "isAboveEma200": null,
+      "isAboveAllMas": null,
+      "isGoldenCross": null,
+      "isMacdBullish": true,
+      "isRsiOverbought": true,
+      "isRsiOversold": false,
+      "isVolumeSpike20D": false,
+      "isCloseAbovePrior20DHigh": false,
+      "isCloseAbovePrior50DHigh": false,
+      "isCloseBelowPrior20DLow": false,
+      "isCloseBelowPrior50DLow": false,
+      "isStochasticOverbought": true,
+      "isStochasticOversold": false,
+      "isAdxTrendStrong": true,
+      "isPlusDiAboveMinusDi": true,
+      "isObvRising20D": true,
+      "isCmfPositive": false,
+      "isSma200Rising": null
+    }
+  }
+}

@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 0 | Complete | Architecture, ownership, contracts, and release gates documented here. |
 | 1 | Complete | Durable Python candle materialization, reconciliation, retention, generation state, and parity tests. |
-| 2 | Pending | Python intraday technical-snapshot parity engine and tests. |
+| 2 | Complete | Python intraday technical-snapshot parity engine, writer contract, and deterministic parity tests. |
 | 3 | Pending | Dedicated coalescing compute worker, operational controls, and benchmarks. |
 | 4 | Pending | Direct production cutover and removal of backend stock intraday jobs. |
 
@@ -306,7 +306,16 @@ fixture and benchmark gates above are therefore mandatory before step 4.
 - Add primary-database configuration and writer contract.
 - Port the technical engine and snapshot metadata.
 - Add Node-generated golden technical fixtures and parity tests.
-- Mark this phase complete only after all fixture fields match.
+- Implemented in `src/psx/technical_snapshot.py` and
+  `src/psx/intraday_technical_writer.py`. The writer reads `IntradayKline` from
+  the company-data database and upserts only the existing
+  `stock_technical_snapshots` document shape in the primary database.
+- The golden fixture is generated from the backend's `technicalindicators`
+  v3.1.0 implementation and covers every persisted indicator section. The
+  engine reproduces that library's initialization/alignment rules directly so
+  warmups remain nullable and do not depend on pandas defaults.
+- Marked complete after all fixture fields match. Phase 3 still needs to wire
+  this writer into the dedicated coalescing compute worker.
 
 ### Phase 3: Dedicated compute worker
 
