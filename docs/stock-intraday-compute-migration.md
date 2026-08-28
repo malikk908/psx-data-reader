@@ -323,6 +323,18 @@ fixture and benchmark gates above are therefore mandatory before step 4.
   bounded compute concurrency, EOD scheduling, metrics, and benchmark tooling.
 - Mark this phase complete only after sustained-load benchmark gates pass.
 
+The Phase 3 worker entry point is `python -m psx.intraday_compute_worker`.
+`--once` processes one newest pending generation and exits, while `--eod`
+(`--reconcile-eod`) requires the buffered PKT close, reconciles before pruning,
+and exits. Configuration is explicit for the company-data and primary MongoDB
+databases through `FINHISAAB_COMPANY_DATA_*` and
+`FINHISAAB_PRIMARY_DB_*`; the complete worker tuning list is in
+`.env.example`. The status remains pending until the sustained-load benchmark
+gate is run in each target environment. A synthetic CPU-only preflight is
+available via `python -m psx.intraday_compute_benchmark`; production gates must
+also run the worker against representative MongoDB data and record the
+generation, raw-lag, write, and memory metrics listed above.
+
 ### Phase 4: Backend cutover
 
 - Remove backend stock intraday scheduling and worker ownership while retaining

@@ -58,6 +58,22 @@ class PipelineStateTests(unittest.TestCase):
         release_filter = collection.find_one_and_update.call_args.args[0]
         self.assertEqual(release_filter["leaseOwner"], "worker")
 
+    def test_renewal_requires_an_unexpired_lease(self):
+        collection = Mock()
+        collection.find_one_and_update.return_value = None
+        state = IntradayPipelineState(collection)
+        now = datetime(2026, 8, 28, 10, tzinfo=timezone.utc)
+
+        self.assertIsNone(state.renew_lease("worker", now=now))
+        self.assertEqual(
+            collection.find_one_and_update.call_args.args[0],
+            {
+                "_id": "stock-intraday",
+                "leaseOwner": "worker",
+                "leaseUntil": {"$gt": now},
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
