@@ -1,4 +1,5 @@
 import unittest
+from concurrent.futures import Future
 from datetime import datetime, timezone
 
 from psx.intraday_compute_worker import (
@@ -98,13 +99,36 @@ class FakeWriter:
         return {"symbol": symbol, "timeframe": timeframe}
 
 
-def config(technical_workers=2):
+class ImmediateProcessExecutor:
+    instances = []
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.calls = []
+        self.shutdown_called = False
+        self.__class__.instances.append(self)
+
+    def submit(self, function, task):
+        self.calls.append(task)
+        future = Future()
+        try:
+            future.set_result(function(task))
+        except Exception as error:
+            future.set_exception(error)
+        return future
+
+    def shutdown(self, **kwargs):
+        self.shutdown_called = True
+
+
+def config(technical_workers=2, technical_execution_mode="thread"):
     return WorkerConfig(
         "mongodb://company",
         "company-data",
         "mongodb://primary",
         "primary",
         technical_workers=technical_workers,
+        technical_execution_mode=technical_execution_mode,
     )
 
 
@@ -180,6 +204,7 @@ class ComputeWorkerTests(unittest.TestCase):
             "FINHISAAB_PRIMARY_DB_MONGO_URI": "mongodb://primary",
             "FINHISAAB_PRIMARY_DB_NAME": "main",
             "INTRADAY_COMPUTE_TECHNICAL_WORKERS": "3",
+            "INTRADAY_COMPUTE_TECHNICAL_EXECUTION_MODE": "process",
         }
         self.assertEqual(company_data_database_settings(environ), {
             "uri": "mongodb://company", "db_name": "company-data",
@@ -187,11 +212,51 @@ class ComputeWorkerTests(unittest.TestCase):
         settings = WorkerConfig.from_env(environ)
         self.assertEqual(settings.primary_uri, "mongodb://primary")
         self.assertEqual(settings.technical_workers, 3)
-        args = parse_args(["--once", "--eod", "--trading-date", "2026-08-28", "--technical-workers", "2"])
+        self.assertEqual(settings.technical_execution_mode, "process")
+        args = parse_args([
+            "--once", "--eod", "--trading-date", "2026-08-28",
+            "--technical-workers", "2", "--technical-execution-mode", "sync",
+        ])
         self.assertTrue(args.once)
         self.assertTrue(args.eod)
         self.assertEqual(args.trading_date, "2026-08-28")
         self.assertEqual(args.technical_workers, 2)
+        self.assertEqual(args.technical_execution_mode, "sync")
+
+    def test_process_mode_dispatches_with_reusable_pool_factory(self):
+        ImmediateProcessExecutor.instances = []
+        state = FakeState([
+            {"generation": 1, "completedGeneration": 0, "latestScrapedAt": NOW},
+            {"generation": 2, "completedGeneration": 1, "latestScrapedAt": NOW},
+        ])
+        dispatched = []
+
+        def process_task(task):
+            dispatched.append(task)
+            return {"symbol": task[1], "timeframe": task[0]}
+
+        worker = IntradayComputeWorker(
+            state,
+            FakeMaterializer({"1m": ["ABC"], "5m": ["DEF"]}),
+            FakeWriter(),
+            config(technical_execution_mode="process"),
+            owner="worker",
+            clock=lambda: NOW,
+            lease_renewer_factory=NoopLease,
+            process_pool_factory=ImmediateProcessExecutor,
+            process_task=process_task,
+        )
+
+        result = worker.run_cycle()
+
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(
+            [(task[1], task[0]) for task in dispatched],
+            [("ABC", "1m"), ("DEF", "5m"), ("ABC", "1m"), ("DEF", "5m")],
+        )
+        self.assertEqual(len(ImmediateProcessExecutor.instances), 1)
+        worker.shutdown()
+        self.assertTrue(ImmediateProcessExecutor.instances[0].shutdown_called)
 
     def test_eod_requires_buffered_weekday_close(self):
         before_close = datetime(2026, 8, 28, 11, 54, tzinfo=timezone.utc)  # 16:54 PKT

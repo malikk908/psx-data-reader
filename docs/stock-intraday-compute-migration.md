@@ -314,8 +314,9 @@ fixture and benchmark gates above are therefore mandatory before step 4.
   v3.1.0 implementation and covers every persisted indicator section. The
   engine reproduces that library's initialization/alignment rules directly so
   warmups remain nullable and do not depend on pandas defaults.
-- Marked complete after all fixture fields match. Phase 3 still needs to wire
-  this writer into the dedicated coalescing compute worker.
+- Marked complete after all fixture fields match. Phase 3 wires this writer into
+  the dedicated coalescing compute worker, with process mode for CPU-bound
+  technical pairs.
 
 ### Phase 3: Dedicated compute worker
 
@@ -328,12 +329,31 @@ The Phase 3 worker entry point is `python -m psx.intraday_compute_worker`.
 (`--reconcile-eod`) requires the buffered PKT close, reconciles before pruning,
 and exits. Configuration is explicit for the company-data and primary MongoDB
 databases through `FINHISAAB_COMPANY_DATA_*` and
-`FINHISAAB_PRIMARY_DB_*`; the complete worker tuning list is in
-`.env.example`. The status remains pending until the sustained-load benchmark
-gate is run in each target environment. A synthetic CPU-only preflight is
-available via `python -m psx.intraday_compute_benchmark`; production gates must
-also run the worker against representative MongoDB data and record the
-generation, raw-lag, write, and memory metrics listed above.
+`FINHISAAB_PRIMARY_DB_*`; the complete worker tuning list, including
+`INTRADAY_COMPUTE_TECHNICAL_EXECUTION_MODE=process`, is in `.env.example`.
+The process mode uses one reusable, bounded `ProcessPoolExecutor`. Each child
+creates its own company-data and primary `MongoClient` in the initializer and
+uses `IntradayTechnicalWriter` for one symbol/timeframe pair. The parent keeps
+the lease renewer, generation ownership, completion, and failure recording;
+in-flight work is drained before a failed generation releases its lease. Use
+`sync` or `thread` for injected unit-test writers and local diagnostics.
+
+The synthetic CPU-only preflight supports all execution modes:
+`python -m psx.intraday_compute_benchmark --technical-execution-mode process`.
+The old thread mode is retained for comparison, but it is GIL-bound and must
+not be used as the production throughput gate. Production gates must also run
+the worker against representative MongoDB data and record the generation,
+raw-lag, write, and memory metrics listed above.
+
+The first local thread preflight measured 10 symbols x 6 timeframes x 500
+candles in 4.4813 seconds (13.39 pairs/second); the default 500-symbol run
+exceeded the 120-second command limit. This documented GIL bottleneck is why
+process mode is now the production default for environment-configured workers.
+The process-mode result still must be recorded per target environment before
+Phase 3 can be marked complete. The local process preflight measured 500
+symbols x 6 timeframes x 500 candles in 50.1922 seconds (59.77 pairs/second),
+which is within the 90-second minimum poll interval for CPU-only work but does
+not include MongoDB reads/writes, memory pressure, or sustained generation lag.
 
 ### Phase 4: Backend cutover
 
