@@ -25,7 +25,7 @@ Session schedule (PKT):
 Env vars:
     MONGODB_INTRADAY_URI          destination MongoDB URI
     MONGODB_INTRADAY_DB_NAME      destination database name (default: finhisaab_intraday)
-    INTRADAY_POLL_CYCLE_MIN_SECONDS   floor between cycles in seconds (default: 60)
+    INTRADAY_POLL_CYCLE_MIN_SECONDS   floor between cycles in seconds (default: 90)
     INTRADAY_STASIS_THRESHOLD     frozen cycles to start the stasis clock (default: 3)
     INTRADAY_STASIS_MIN_MINUTES   wall-clock minutes volume must stay frozen before
                                   acting; prevents false positives from brief halts
@@ -59,6 +59,7 @@ except Exception:
     pass
 
 from psx.market_watch_scraper import fetch_market_watch
+from psx.intraday_pipeline_state import IntradayPipelineState, STATE_COLLECTION
 
 logger = logging.getLogger(__name__)
 
@@ -424,7 +425,7 @@ def build_ops(quotes, scraped_at, previous_by_symbol):
 # Poll cycle
 # ---------------------------------------------------------------------------
 
-def run_poll_cycle(collection, session):
+def run_poll_cycle(collection, session, pipeline_state=None):
     """One HTTP request → parse → bulk upsert. Returns a summary dict."""
     cycle_start = time.monotonic()
 
@@ -449,6 +450,7 @@ def run_poll_cycle(collection, session):
     ops          = build_ops(quotes, scraped_at, previous_by_symbol)
     inserted = updated = 0
 
+    generation = None
     if ops:
         try:
             result   = collection.bulk_write(ops, ordered=False)
@@ -458,12 +460,22 @@ def run_poll_cycle(collection, session):
             inserted = bwe.details.get("nUpserted", 0)
             updated  = bwe.details.get("nModified", 0)
             logger.error("BulkWriteError: %s", bwe.details.get("writeErrors", []))
+        else:
+            if pipeline_state is not None:
+                try:
+                    state = pipeline_state.publish_generation(scraped_at)
+                    generation = state.get("generation")
+                except Exception as exc:
+                    # Raw ingest succeeded; a missing wake-up is recoverable by
+                    # the worker's periodic reconciliation and must not stop polling.
+                    logger.error("Failed to publish intraday compute generation: %s", exc)
 
     return {
         "symbol_count": len(quotes),
         "total_volume": total_volume,
         "inserted":     inserted,
         "updated":      updated,
+        "generation":   generation,
         "elapsed_s":    time.monotonic() - cycle_start,
         "fetch_error":  False,
     }
@@ -504,6 +516,8 @@ def main():
     dst_client = MongoClient(dst_uri)
     collection = dst_client[dst_db_name][INTRADAY_COLLECTION]
     ensure_indexes(collection)
+    pipeline_state = IntradayPipelineState(dst_client[dst_db_name][STATE_COLLECTION])
+    pipeline_state.ensure_indexes()
 
     stasis   = StasisDetector(stasis_thresh, holiday_recheck, stasis_min_minutes)
     cycle_number = 0
@@ -522,14 +536,15 @@ def main():
                 logger.info("=== Cycle %d | %s PKT ===",
                             cycle_number, now_pkt().strftime("%H:%M:%S"))
 
-                summary = run_poll_cycle(collection, sess)
+                summary = run_poll_cycle(collection, sess, pipeline_state)
 
                 logger.info(
                     "=== Cycle %d done | %.1fs | %d symbols | vol=%s | "
-                    "%d inserted %d updated%s ===",
+                    "%d inserted %d updated | generation=%s%s ===",
                     cycle_number, summary["elapsed_s"], summary["symbol_count"],
                     f"{summary['total_volume']:,}" if summary["total_volume"] is not None else "n/a",
                     summary["inserted"], summary["updated"],
+                    summary["generation"] if summary["generation"] is not None else "n/a",
                     " | FETCH ERROR" if summary["fetch_error"] else "",
                 )
 
