@@ -82,7 +82,11 @@ class IntradayPipelineState:
         now = now or utc_now()
         lease_until = now + timedelta(seconds=ttl_seconds)
         return self.collection.find_one_and_update(
-            {"_id": self.state_id, "leaseOwner": owner},
+            {
+                "_id": self.state_id,
+                "leaseOwner": owner,
+                "leaseUntil": {"$gt": now},
+            },
             {"$set": {"leaseUntil": lease_until, "updatedAt": now}},
             return_document=ReturnDocument.AFTER,
         )
@@ -95,14 +99,36 @@ class IntradayPipelineState:
             return_document=ReturnDocument.AFTER,
         )
 
-    def mark_completed(self, owner, generation, completed_at=None):
+    def mark_completed(self, owner, generation, completed_at=None, require_active=False):
         completed_at = completed_at or utc_now()
+        selector = {"_id": self.state_id, "leaseOwner": owner}
+        if require_active:
+            selector["leaseUntil"] = {"$gt": completed_at}
         return self.collection.find_one_and_update(
-            {"_id": self.state_id, "leaseOwner": owner},
+            selector,
             {
                 "$set": {
                     "completedGeneration": generation,
                     "lastComputeAt": completed_at,
+                    "updatedAt": completed_at,
+                },
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+
+    def mark_eod_completed(self, owner, trading_date, completed_at=None):
+        """Record an EOD run only while this worker still owns an active lease."""
+        completed_at = completed_at or utc_now()
+        return self.collection.find_one_and_update(
+            {
+                "_id": self.state_id,
+                "leaseOwner": owner,
+                "leaseUntil": {"$gt": completed_at},
+            },
+            {
+                "$set": {
+                    "lastEodTradingDate": trading_date,
+                    "lastEodAt": completed_at,
                     "updatedAt": completed_at,
                 },
             },
