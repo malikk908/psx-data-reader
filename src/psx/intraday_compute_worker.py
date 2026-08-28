@@ -236,11 +236,12 @@ def _owner_id():
 class LeaseRenewer:
     """Renew a lease independently of synchronous materialization work."""
 
-    def __init__(self, state, owner, ttl_seconds, interval_seconds):
+    def __init__(self, state, owner, ttl_seconds, interval_seconds, clock=utc_now):
         self.state = state
         self.owner = owner
         self.ttl_seconds = ttl_seconds
         self.interval_seconds = interval_seconds
+        self.clock = clock
         self.lost = threading.Event()
         self.stop_event = threading.Event()
         self.thread = None
@@ -252,7 +253,7 @@ class LeaseRenewer:
     def _run(self):
         while not self.stop_event.wait(self.interval_seconds):
             try:
-                renewed = self.state.renew_lease(self.owner, self.ttl_seconds)
+                renewed = self.state.renew_lease(self.owner, self.ttl_seconds, now=self.clock())
             except Exception:
                 logger.exception("Intraday compute lease renewal failed")
                 self.lost.set()
@@ -266,7 +267,7 @@ class LeaseRenewer:
         if self.lost.is_set():
             raise LeaseLostError("intraday compute lease is no longer owned")
         try:
-            renewed = self.state.renew_lease(self.owner, self.ttl_seconds)
+            renewed = self.state.renew_lease(self.owner, self.ttl_seconds, now=self.clock())
         except Exception as exc:
             self.lost.set()
             raise LeaseLostError("intraday compute lease renewal failed") from exc
@@ -518,6 +519,7 @@ class IntradayComputeWorker:
             self.owner,
             self.config.lease_ttl_seconds,
             self.config.lease_renew_interval_seconds,
+            clock=self.clock,
         )
         lease.start()
         generations = []
@@ -568,6 +570,7 @@ class IntradayComputeWorker:
             self.owner,
             self.config.lease_ttl_seconds,
             self.config.lease_renew_interval_seconds,
+            clock=self.clock,
         )
         lease.start()
         try:

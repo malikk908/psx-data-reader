@@ -11,13 +11,14 @@ from psx.intraday_compute_worker import (
     parse_args,
 )
 from psx.intraday_compute_benchmark import parse_args as parse_benchmark_args, run_benchmark
+from psx.live_intraday_benchmark import parse_args as parse_live_benchmark_args
 
 
 NOW = datetime(2026, 8, 28, 12, tzinfo=timezone.utc)
 
 
 class NoopLease:
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         self.ensure_count = 0
 
     def start(self):
@@ -289,6 +290,14 @@ class ComputeWorkerTests(unittest.TestCase):
         self.assertEqual(result["candleCount"], 30)
         self.assertGreater(result["pairsPerSecond"], 0)
         self.assertEqual(parse_benchmark_args(["--symbols", "2"]).symbols, 2)
+        self.assertEqual(
+            parse_live_benchmark_args(["--technical-workers", "3"]).technical_workers,
+            3,
+        )
+        self.assertEqual(
+            parse_live_benchmark_args(["--mode", "sustained", "--cycles", "2"]).cycles,
+            2,
+        )
 
 
 if __name__ == "__main__":
