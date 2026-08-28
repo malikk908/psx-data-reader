@@ -1,0 +1,92 @@
+[
+  {
+    "name": "opening and delayed timestamps",
+    "snapshots": [
+      {
+        "symbol": "ABC",
+        "scraped_at": "2026-06-20T09:31:00+05:00",
+        "scraped_at_minute": "2026-06-20T09:31:00+05:00",
+        "price": 101,
+        "open": 100,
+        "high": 102,
+        "low": 99,
+        "volume": 5000,
+        "volume_delta": null
+      },
+      {
+        "symbol": "ABC",
+        "scraped_at": "2026-06-20T09:32:00+05:00",
+        "scraped_at_minute": "2026-06-20T09:32:00+05:00",
+        "price": 99,
+        "open": 100,
+        "high": 105,
+        "low": 98,
+        "volume": 5200,
+        "volume_delta": 200
+      },
+      {
+        "symbol": "ABC",
+        "scraped_at": "2026-06-20T09:33:00+05:00",
+        "scraped_at_minute": "2026-06-20T09:33:00+05:00",
+        "price": 100,
+        "open": 100,
+        "high": 105,
+        "low": 98,
+        "volume": 5200,
+        "volume_delta": -1
+      }
+    ],
+    "expected": [
+      {
+        "symbol": "ABC",
+        "timeframe": "1m",
+        "timestamp": 1781929560000,
+        "tradingDate": "2026-06-20",
+        "open": 100,
+        "high": 102,
+        "low": 99,
+        "close": 101,
+        "volume": 5000
+      },
+      {
+        "symbol": "ABC",
+        "timeframe": "1m",
+        "timestamp": 1781929620000,
+        "tradingDate": "2026-06-20",
+        "open": 101,
+        "high": 105,
+        "low": 98,
+        "close": 99,
+        "volume": 200
+      },
+      {
+        "symbol": "ABC",
+        "timeframe": "1m",
+        "timestamp": 1781929680000,
+        "tradingDate": "2026-06-20",
+        "open": 99,
+        "high": 100,
+        "low": 99,
+        "close": 100,
+        "volume": 0
+      }
+    ],
+    "higher": {
+      "timeframe": "5m",
+      "minutes": 5,
+      "expected": [
+        {
+          "symbol": "ABC",
+          "timeframe": "5m",
+          "timestamp": 1781929500000,
+          "tradingDate": "2026-06-20",
+          "open": 100,
+          "high": 105,
+          "low": 98,
+          "close": 100,
+          "volume": 5200
+        }
+      ]
+    }
+  }
+]

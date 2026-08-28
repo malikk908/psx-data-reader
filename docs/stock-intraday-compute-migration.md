@@ -5,7 +5,7 @@
 | Phase | Status | Scope |
 | --- | --- | --- |
 | 0 | Complete | Architecture, ownership, contracts, and release gates documented here. |
-| 1 | Pending | Durable Python candle materialization, reconciliation, retention, and tests. |
+| 1 | Complete | Durable Python candle materialization, reconciliation, retention, generation state, and parity tests. |
 | 2 | Pending | Python intraday technical-snapshot parity engine and tests. |
 | 3 | Pending | Dedicated coalescing compute worker, operational controls, and benchmarks. |
 | 4 | Pending | Direct production cutover and removal of backend stock intraday jobs. |
