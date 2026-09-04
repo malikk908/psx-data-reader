@@ -201,9 +201,9 @@ class IntradayMaterializer:
         query = {"scraped_at": {"$gte": start, "$lt": end}}
         if minimum_scrape_time is not None:
             query["scraped_at_minute"] = {"$gte": minimum_scrape_time}
-        rows = self.raw_collection.find(query).sort(
-            [("symbol", 1), ("scraped_at_minute", 1)]
-        )
+        # Keep the scraped_at range indexable; grouping preserves per-symbol
+        # order after the global minute sort.
+        rows = self.raw_collection.find(query).sort([("scraped_at_minute", 1)])
         by_symbol = defaultdict(list)
         for row in rows:
             by_symbol[row["symbol"]].append(row)
