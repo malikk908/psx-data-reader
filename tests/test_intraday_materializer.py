@@ -9,6 +9,7 @@ class FakeCollection:
     def __init__(self, documents=None):
         self.documents = list(documents or [])
         self.operations = []
+        self.sort_calls = []
 
     def find(self, query, projection=None):
         rows = []
@@ -31,8 +32,11 @@ class FakeCollection:
                 continue
             rows.append(document.copy())
 
+        collection = self
+
         class Cursor(list):
             def sort(self, fields):
+                collection.sort_calls.append(fields)
                 for field, direction in reversed(fields):
                     super().sort(key=lambda row: row[field], reverse=direction < 0)
                 return self
@@ -128,6 +132,16 @@ class MaterializerTests(unittest.TestCase):
         self.assertEqual(repeat["written"], 0)
         self.assertEqual(repeat["settled"], 0)
         self.assertEqual(repeat["changedByTimeframe"], {})
+
+    def test_raw_snapshot_read_sorts_by_minute_without_leading_symbol(self):
+        raw_collection = FakeCollection([])
+        materializer = IntradayMaterializer(raw_collection, FakeCollection())
+
+        materializer._load_raw_snapshots("2026-08-28")
+
+        # The date range remains usable by scraped_at_1; grouping restores the
+        # per-symbol order needed by the candle builder.
+        self.assertEqual(raw_collection.sort_calls, [[("scraped_at_minute", 1)]])
 
     def test_candle_pruning_keeps_configured_number_of_trading_days(self):
         candles = FakeCollection([
