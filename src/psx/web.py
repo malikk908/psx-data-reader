@@ -8,12 +8,16 @@ from typing import Union
 from tqdm import tqdm
 
 import threading
+import re
 import pandas as pd
 import numpy as np
 from curl_cffi import requests
 import time
 import random
 from pdb import set_trace
+
+
+_REQUEST_ID_RE = re.compile(r'window\.__ps\s*=\s*\{[^}]*"_k"\s*:\s*"([^"]+)"')
 
 
 class DataReader:
@@ -77,10 +81,28 @@ class DataReader:
         return pd.concat(data, keys=tickers, names=["Ticker", "Date"])
 
 
+    def _fetch_request_id(self, session) -> str:
+        response = session.get("https://dps.psx.com.pk/", timeout=30)
+        response.raise_for_status()
+        match = _REQUEST_ID_RE.search(response.text)
+        if not match:
+            raise RuntimeError("PSX homepage did not provide the AJAX request ID")
+        return match.group(1)
+
     def download(self, symbol: str, date: date):
         session = self.session
+        session.headers["X-Requested-With"] = "XMLHttpRequest"
+        if not session.headers.get("X-Req-Id"):
+            session.headers["X-Req-Id"] = self._fetch_request_id(session)
+
         post = {"month": date.month, "year": date.year, "symbol": symbol}
-        response = session.post(self.__history, data=post)
+        response = session.post(self.__history, data=post, timeout=30)
+        if response.status_code == 403:
+            # The page token expires; refresh it and retry the historical request once.
+            session.headers["X-Req-Id"] = self._fetch_request_id(session)
+            response = session.post(self.__history, data=post, timeout=30)
+        response.raise_for_status()
+
         data = parser(response.text, features="html.parser")
         data = self.toframe(data)
         return data
