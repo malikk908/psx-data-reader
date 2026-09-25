@@ -36,6 +36,15 @@ HEADERS = {
 _REQUEST_ID_RE = re.compile(r'window\.__ps\s*=\s*\{[^}]*"_k"\s*:\s*"([^"]+)"')
 
 
+def _fetch_request_id(session):
+    home = session.get(HOME_URL, headers={"Accept": "text/html, */*"}, timeout=15)
+    home.raise_for_status()
+    match = _REQUEST_ID_RE.search(home.text)
+    if not match:
+        raise RuntimeError("PSX homepage did not provide the AJAX request ID")
+    return match.group(1)
+
+
 def fetch_market_watch(session=None):
     """
     GET /market-watch and parse the HTML table into a list of quote dicts.
@@ -49,19 +58,19 @@ def fetch_market_watch(session=None):
     """
     sess = session or requests.Session()
     # PSX's browser first loads the homepage, then sends its per-page _k value
-    # as X-Req-Id on same-origin AJAX requests. Without it, /market-watch can
-    # return a 404 even though the browser page succeeds.
+    # as X-Req-Id on same-origin AJAX requests. The token can expire while the
+    # poller is running, so refresh it and retry once when PSX returns 403.
     sess.headers.update(HEADERS)
     if not sess.headers.get("X-Req-Id"):
-        home = sess.get(HOME_URL, headers={"Accept": "text/html, */*"}, timeout=15)
-        home.raise_for_status()
-        match = _REQUEST_ID_RE.search(home.text)
-        if not match:
-            raise RuntimeError("PSX homepage did not provide the AJAX request ID")
-        sess.headers["X-Req-Id"] = match.group(1)
+        sess.headers["X-Req-Id"] = _fetch_request_id(sess)
 
     scraped_at = datetime.now(timezone.utc)
     resp = sess.get(MARKET_WATCH_URL, timeout=15)
+    if resp.status_code == 403:
+        logger.warning("market-watch request rejected (403); refreshing PSX request ID and retrying")
+        sess.headers["X-Req-Id"] = _fetch_request_id(sess)
+        scraped_at = datetime.now(timezone.utc)
+        resp = sess.get(MARKET_WATCH_URL, timeout=15)
     resp.raise_for_status()
 
     soup = BeautifulSoup(resp.text, "html.parser")
