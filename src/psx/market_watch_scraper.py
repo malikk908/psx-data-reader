@@ -9,6 +9,7 @@ Returns a list of dicts — one per symbol — with fields:
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 
 import requests
@@ -16,13 +17,23 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
+HOME_URL = "https://dps.psx.com.pk/"
 MARKET_WATCH_URL = "https://dps.psx.com.pk/market-watch"
 
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/140.0.0.0 Safari/537.36"
+)
+
 HEADERS = {
-    "X-Requested-With": "XMLHttpRequest",
+    "User-Agent": USER_AGENT,
     "Accept": "text/html, */*",
-    "Referer": "https://dps.psx.com.pk/",
+    "X-Requested-With": "XMLHttpRequest",
+    "Referer": HOME_URL,
 }
+
+_REQUEST_ID_RE = re.compile(r'window\.__ps\s*=\s*\{[^}]*"_k"\s*:\s*"([^"]+)"')
 
 
 def fetch_market_watch(session=None):
@@ -37,9 +48,20 @@ def fetch_market_watch(session=None):
       scraped_at  — UTC-aware datetime captured just before the HTTP request
     """
     sess = session or requests.Session()
-    scraped_at = datetime.now(timezone.utc)
+    # PSX's browser first loads the homepage, then sends its per-page _k value
+    # as X-Req-Id on same-origin AJAX requests. Without it, /market-watch can
+    # return a 404 even though the browser page succeeds.
+    sess.headers.update(HEADERS)
+    if not sess.headers.get("X-Req-Id"):
+        home = sess.get(HOME_URL, headers={"Accept": "text/html, */*"}, timeout=15)
+        home.raise_for_status()
+        match = _REQUEST_ID_RE.search(home.text)
+        if not match:
+            raise RuntimeError("PSX homepage did not provide the AJAX request ID")
+        sess.headers["X-Req-Id"] = match.group(1)
 
-    resp = sess.get(MARKET_WATCH_URL, headers=HEADERS, timeout=15)
+    scraped_at = datetime.now(timezone.utc)
+    resp = sess.get(MARKET_WATCH_URL, timeout=15)
     resp.raise_for_status()
 
     soup = BeautifulSoup(resp.text, "html.parser")
