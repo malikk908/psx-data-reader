@@ -266,6 +266,42 @@ class SaveAnnouncementsTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": doc_id}), 1)
 
+    def test_empty_stocks_collection_aborts_without_deleting_anything(self):
+        # Wrong database: no stocks, so nothing can be priced.
+        self.db["stocks"].delete_many({})
+        doc_id = self.db[DIVIDENDS].insert_one({
+            "symbol": "SOYASUP", "amountPerShare": 0.5, "exDate": datetime(2999, 10, 16), "status": "ANNOUNCED",
+            "metadata": {"source": "scstrade"},
+        }).inserted_id
+
+        ok, message = self.save([scraped("SOYASUP", 25.0, datetime(2999, 10, 16))])
+
+        self.assertFalse(ok)
+        self.assertIn("No face values", message)
+        self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": doc_id}), 1)
+
+    def test_future_dividend_for_symbol_missing_from_stocks_is_not_deleted_as_orphan(self):
+        doc_id = self.db[DIVIDENDS].insert_one({
+            "symbol": "DELISTED", "amountPerShare": 1, "exDate": datetime(2999, 10, 16), "status": "ANNOUNCED",
+            "metadata": {"source": "scstrade"},
+        }).inserted_id
+
+        ok, _ = self.save([scraped("DELISTED", 10.0, datetime(2999, 10, 16))])
+
+        self.assertTrue(ok)
+        self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": doc_id}), 1)
+
+    def test_unlisted_future_dividend_for_a_known_stock_is_still_deleted(self):
+        doc_id = self.db[DIVIDENDS].insert_one({
+            "symbol": "SOYASUP", "amountPerShare": 0.5, "exDate": datetime(2999, 10, 16), "status": "ANNOUNCED",
+            "metadata": {"source": "scstrade"},
+        }).inserted_id
+
+        ok, _ = self.save([scraped("NML", 20.0, datetime(2999, 10, 20))])
+
+        self.assertTrue(ok)
+        self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": doc_id}), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

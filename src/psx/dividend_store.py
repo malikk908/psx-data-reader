@@ -349,9 +349,18 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
                                   archive_collection_name=DEFAULT_ARCHIVE_COLLECTION):
     try:
         db = connect_to_mongodb(connection_string, db_name)
-        create_indexes(db, dividend_collection_name, bonus_collection_name)
 
+        # Without face values no dividend can be priced, and the orphan cleanup
+        # below would delete every stored future dividend. An empty stocks
+        # collection almost always means the wrong database, so write nothing.
         face_values = load_face_values(db)
+        if not face_values:
+            error_msg = (f"No face values in {db_name}.stocks; refusing to save announcements. "
+                         f"Check FINHISAAB_PRIMARY_DB_NAME points at the right database.")
+            logger.error(error_msg)
+            return False, error_msg
+
+        create_indexes(db, dividend_collection_name, bonus_collection_name)
         splits = load_splits(db, bonus_collection_name)
         dividends, bonuses = process_announcements(df, face_values, splits)
 
@@ -375,9 +384,15 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
             })
 
             div_delete_ops = []
+            unpriced_kept = 0
             for doc in future_divs:
                 key = (doc.get('symbol'), doc.get('exDate'))
                 if key in incoming_div_keys:
+                    continue
+                if doc.get('symbol') not in face_values:
+                    # Its dividends were skipped this run for lack of a face value,
+                    # so being absent from incoming says nothing about the feed.
+                    unpriced_kept += 1
                     continue
                 if _has_entitlements(db, doc['_id']):
                     logger.warning(
@@ -386,6 +401,11 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
                     )
                     continue
                 div_delete_ops.append(pymongo.DeleteOne({'_id': doc['_id']}))
+
+            if unpriced_kept:
+                logger.warning(
+                    f"Kept {unpriced_kept} future scstrade dividend(s) for symbols missing from stocks"
+                )
 
             if div_delete_ops:
                 try:
