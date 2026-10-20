@@ -279,8 +279,10 @@ def archive_superseded_announcements(db, dividends, dividend_collection_name,
 def correct_existing_dividends(db, dividends, dividend_collection_name, now=None):
     """
     Bring recent scstrade dividends already in the database in line with the
-    amount and face value computed from the stock now. Insert is otherwise
-    the only write, so a corrected stock face value never reached them.
+    amount computed from the stock's face value on the ex-date. Insert is
+    otherwise the only write, so a corrected face value never reached them.
+    Older records are not looked at, so a dividend that was right at the time
+    of a later split stays as it is.
 
     Only records that are still ANNOUNCED and have no entitlements are
     changed. Others are reported, since their entitlements need recomputing
@@ -307,9 +309,10 @@ def correct_existing_dividends(db, dividends, dividend_collection_name, now=None
         if doc is None:
             continue
 
-        same_amount = abs(doc.get("amountPerShare", 0) - dividend["amountPerShare"]) < 1e-9
-        same_face_value = doc.get("faceValue") == dividend["faceValue"]
-        if same_amount and same_face_value:
+        # The amount is what credits holders. Only a different amount is a
+        # correction: records saved before face values were tracked have no
+        # faceValue field at all, and their amounts are right.
+        if abs(doc.get("amountPerShare", 0) - dividend["amountPerShare"]) < 1e-9:
             continue
 
         if doc.get("status") != "ANNOUNCED" or _has_entitlements(db, doc["_id"]):

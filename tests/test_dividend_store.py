@@ -157,6 +157,34 @@ class ArchiveAndCorrectionTests(unittest.TestCase):
         self.assertEqual(updated, 0)
         self.assertEqual(self.db[DIVIDENDS].find_one({"_id": doc_id})["amountPerShare"], 2.5)
 
+    def test_record_without_a_face_value_field_is_left_alone_when_its_amount_is_right(self):
+        # UBL, Rs 8 = 160% of Rs 5 after its split. Saved before face values were tracked.
+        doc_id = self.db[DIVIDENDS].insert_one({
+            "symbol": "UBL", "amountPerShare": 8, "exDate": datetime(2026, 10, 23),
+            "status": "ANNOUNCED", "metadata": {"source": "scstrade"},
+        }).inserted_id
+        incoming = {"symbol": "UBL", "exDate": datetime(2026, 10, 23), "amountPerShare": 8.0, "faceValue": 5.0,
+                    "metadata": {"source": "scstrade", "dividendPercent": 160.0}}
+
+        updated = dividend_store.correct_existing_dividends(self.db, [incoming], DIVIDENDS, NOW)
+
+        self.assertEqual(updated, 0)
+        self.assertNotIn("faceValue", self.db[DIVIDENDS].find_one({"_id": doc_id}))
+
+    def test_records_older_than_the_lookback_are_never_changed(self):
+        # Dividend from before a split, recomputed here as if it were new: it must stay.
+        doc_id = self.db[DIVIDENDS].insert_one({
+            "symbol": "UBL", "amountPerShare": 8, "exDate": datetime(2025, 10, 23),
+            "status": "ANNOUNCED", "metadata": {"source": "scstrade"},
+        }).inserted_id
+        incoming = {"symbol": "UBL", "exDate": datetime(2025, 10, 23), "amountPerShare": 4.0, "faceValue": 5.0,
+                    "metadata": {"source": "scstrade", "dividendPercent": 80.0}}
+
+        updated = dividend_store.correct_existing_dividends(self.db, [incoming], DIVIDENDS, NOW)
+
+        self.assertEqual(updated, 0)
+        self.assertEqual(self.db[DIVIDENDS].find_one({"_id": doc_id})["amountPerShare"], 8)
+
 
 @unittest.skipIf(mongomock is None, "mongomock is not installed")
 class SaveAnnouncementsTests(unittest.TestCase):
