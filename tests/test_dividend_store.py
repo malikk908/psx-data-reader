@@ -104,6 +104,19 @@ class ArchiveAndCorrectionTests(unittest.TestCase):
         self.assertEqual(stored["archiveReason"], "superseded_by_scstrade")
         self.assertEqual(stored["supersededBy"]["exDate"], datetime(2026, 10, 16))
 
+    def test_psx_announcement_on_the_same_ex_date_is_not_a_duplicate(self):
+        psx_id = self.psx("UBL", datetime(2026, 10, 22), 8)
+        self.db["dividendentitlements"].insert_one({"announcementId": psx_id, "isActive": True})
+        no_ents = self.psx("EFERT", datetime(2026, 10, 30), 5.5)
+
+        archived, blocked = dividend_store.archive_superseded_announcements(
+            self.db,
+            [self.incoming("UBL", datetime(2026, 10, 22), 8), self.incoming("EFERT", datetime(2026, 10, 30), 5.5)],
+            DIVIDENDS, ARCHIVE, NOW)
+
+        self.assertEqual((archived, blocked), (0, set()))
+        self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": {"$in": [psx_id, no_ents]}}), 2)
+
     def test_announcements_from_other_sources_or_far_away_are_kept(self):
         manual = self.psx("SOYASUP", datetime(2026, 10, 17), 0.5, source="manual")
         legacy = self.db[DIVIDENDS].insert_one(

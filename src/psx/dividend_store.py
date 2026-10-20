@@ -241,6 +241,13 @@ def archive_superseded_announcements(db, dividends, dividend_collection_name,
                 continue
             if abs(candidate["exDate"] - dividend["exDate"]) > window:
                 continue
+            # Same ex-date is not a duplicate: the (symbol, exDate) unique index
+            # means the PSX record is the only one, with scstrade's date already.
+            # It keeps its richer data (link, record and pay dates), and the
+            # scstrade insert is a no-op on the index.
+            if candidate["exDate"] == dividend["exDate"]:
+                handled.add(candidate["_id"])
+                continue
 
             if _has_entitlements(db, candidate["_id"]):
                 logger.warning(
