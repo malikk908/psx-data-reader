@@ -87,6 +87,26 @@ class MarketWatchPollerTests(unittest.TestCase):
         self.assertTrue(result["fetch_error"])
         self.assertIsNone(result["generation"])
         self.assertEqual(set(result), set(ok))
+        self.assertIsNone(ok["error"])
+        self.assertEqual(result["error"]["code"], "PSX_FETCH_FAILED")
+        self.assertIn("Remote end closed connection", result["error"]["message"])
+
+    def test_write_failure_and_empty_response_report_an_error(self):
+        class FailingCollection(FakeCollection):
+            def bulk_write(self, operations, ordered=False):
+                from pymongo.errors import BulkWriteError
+
+                raise BulkWriteError({"nUpserted": 0, "nModified": 0, "writeErrors": [{"errmsg": "dup"}]})
+
+        quote = {"symbol": "ABC", "price": 10, "open": 10, "high": 10, "low": 10, "volume": 100}
+        scraped_at = datetime(2026, 8, 28, 10, 0, tzinfo=timezone.utc)
+        with patch.object(market_watch_poller, "fetch_market_watch", return_value=([quote], scraped_at)):
+            failed = market_watch_poller.run_poll_cycle(FailingCollection(), object(), FakeState())
+        self.assertEqual(failed["error"]["code"], "MONGO_WRITE_FAILED")
+
+        with patch.object(market_watch_poller, "fetch_market_watch", return_value=([], scraped_at)):
+            empty = market_watch_poller.run_poll_cycle(FakeCollection(), object(), FakeState())
+        self.assertEqual(empty["error"]["code"], "PSX_EMPTY_RESPONSE")
 
 
 if __name__ == "__main__":

@@ -32,6 +32,11 @@ Env vars:
                                   (default: 20)
     INTRADAY_HOLIDAY_RECHECK_MIN  minutes to sleep when stasis confirmed (default: 20)
 
+Health reporting for finhisaab-be's feed watchdog (see psx/feed_health.py):
+    HEALTH_PORT                   /health port on Railway's private network (default: PORT, else 8080)
+    FEED_HEALTH_REPORT_URL        finhisaab-be base URL for started/fatal events (unset: off)
+    FEED_HEALTH_REPORT_KEY        X-API-Key for those events
+
 Storage: intraday_klines_temp collection.
   Upsert key : (symbol, scraped_at_minute) — one doc per symbol per UTC minute.
   scraped_at : exact UTC scrape timestamp, kept for ordering and freshness checks.
@@ -58,6 +63,7 @@ try:
 except Exception:
     pass
 
+from psx.feed_health import FeedHealth
 from psx.market_watch_scraper import fetch_market_watch
 from psx.intraday_pipeline_state import IntradayPipelineState, STATE_COLLECTION
 
@@ -185,12 +191,14 @@ def _chunked_sleep(target_utc):
         time.sleep(min(remaining, 60.0))
 
 
-def sleep_until_open():
+def sleep_until_open(health=None):
     """Block until the clock says the market is open."""
     seconds, reason = seconds_until_next_open()
     if seconds <= 0:
         return
     target_utc = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+    if health is not None:
+        health.sleeping(target_utc, f"market closed ({reason})")
     logger.info(
         "Market closed (%s). Sleeping %.0f min until ~%s PKT.",
         reason, seconds / 60,
@@ -268,7 +276,7 @@ class StasisDetector:
         elapsed_min = (now - self._stasis_since).total_seconds() / 60
         return elapsed_min >= self.min_stasis_minutes
 
-    def sleep_and_reset(self):
+    def sleep_and_reset(self, health=None):
         """
         Sleep for recheck_minutes (or until next clock-open, whichever is sooner),
         then clear history so the next cycle evaluates fresh data.
@@ -290,6 +298,12 @@ class StasisDetector:
             (datetime.now(timezone.utc) - self._stasis_since).total_seconds() / 60
             if self._stasis_since else 0
         )
+        if health is not None:
+            health.sleeping(
+                target_utc,
+                f"volume unchanged for {elapsed_min:.0f} min: holiday or halt suspected" if clock_secs <= 0
+                else "market closed",
+            )
         logger.warning(
             "Volume stasis confirmed — frozen for %.0f min across %d cycles. "
             "Possible holiday or halt. Sleeping %.0f min (%s) until ~%s PKT.",
@@ -439,6 +453,7 @@ def run_poll_cycle(collection, session, pipeline_state=None):
             "generation": None,
             "elapsed_s": time.monotonic() - cycle_start,
             "fetch_error": True,
+            "error": {"code": "PSX_FETCH_FAILED", "message": str(exc)},
         }
 
     total_volume = sum(q.get("volume") or 0 for q in quotes)
@@ -452,6 +467,7 @@ def run_poll_cycle(collection, session, pipeline_state=None):
     inserted = updated = 0
 
     generation = None
+    error = None if quotes else {"code": "PSX_EMPTY_RESPONSE", "message": "market-watch returned no symbols"}
     if ops:
         try:
             result   = collection.bulk_write(ops, ordered=False)
@@ -461,6 +477,7 @@ def run_poll_cycle(collection, session, pipeline_state=None):
             inserted = bwe.details.get("nUpserted", 0)
             updated  = bwe.details.get("nModified", 0)
             logger.error("BulkWriteError: %s", bwe.details.get("writeErrors", []))
+            error = {"code": "MONGO_WRITE_FAILED", "message": str(bwe.details.get("writeErrors", []))[:300]}
         else:
             if pipeline_state is not None:
                 try:
@@ -479,6 +496,7 @@ def run_poll_cycle(collection, session, pipeline_state=None):
         "generation":   generation,
         "elapsed_s":    time.monotonic() - cycle_start,
         "fetch_error":  False,
+        "error":        error,
     }
 
 
@@ -489,12 +507,21 @@ def run_poll_cycle(collection, session, pipeline_state=None):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="PSX market-watch intraday poller.")
-    args = parser.parse_args()
+    parser.parse_args()
 
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
+
+    # /health and started/fatal events for finhisaab-be's feed watchdog.
+    cycle_max_secs = float(os.getenv("INTRADAY_POLL_CYCLE_MAX_SECONDS", "150"))
+    health = FeedHealth("psx-intraday", stall_after_s=max(600, cycle_max_secs * 4))
+    health.start_server()
+    health.run(lambda: poll_forever(health))
+
+
+def poll_forever(health):
 
     dst_uri         = os.getenv("MONGODB_INTRADAY_URI", "mongodb://127.0.0.1:27017/")
     dst_db_name     = os.getenv("MONGODB_INTRADAY_DB_NAME", "finhisaab_intraday")
@@ -512,6 +539,7 @@ def main():
 
     if not test_mongo_connectivity(dst_uri, dst_db_name):
         logger.error("MongoDB unreachable. Exiting.")
+        health.report("fatal", message="MongoDB unreachable at startup")
         return
 
     dst_client = MongoClient(dst_uri)
@@ -527,7 +555,7 @@ def main():
         with requests.Session() as sess:
             while True:
                 # Layer 1: clock-based sleep (nights, weekends)
-                sleep_until_open()
+                sleep_until_open(health)
 
                 secs, _ = seconds_until_next_open()
                 if secs > 0:
@@ -537,7 +565,16 @@ def main():
                 logger.info("=== Cycle %d | %s PKT ===",
                             cycle_number, now_pkt().strftime("%H:%M:%S"))
 
+                health.attempt()
                 summary = run_poll_cycle(collection, sess, pipeline_state)
+                if summary["error"]:
+                    health.failure(summary["error"]["code"], summary["error"]["message"])
+                else:
+                    health.success(
+                        symbols=summary["symbol_count"],
+                        total_volume=summary["total_volume"],
+                        generation=summary["generation"],
+                    )
 
                 logger.info(
                     "=== Cycle %d done | %.1fs | %d symbols | vol=%s | "
@@ -553,7 +590,7 @@ def main():
                 if not summary["fetch_error"] and summary["total_volume"] is not None:
                     stasis.record(summary["total_volume"])
                     if stasis.is_stale():
-                        stasis.sleep_and_reset()
+                        stasis.sleep_and_reset(health)
                         cycle_number = 0  # reset so logs are readable after each wake
                         continue
 
