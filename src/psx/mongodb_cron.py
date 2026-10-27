@@ -44,7 +44,7 @@ def test_mongo_connectivity(connection_string: str, db_name: str) -> bool:
         client.admin.command('ping')
         # Optionally touch the target DB to ensure we can access it
         _ = client[db_name].name
-        print(f"MongoDB connectivity OK for {connection_string} (db: {db_name})")
+        print(f"MongoDB connectivity OK (db: {db_name})")
         return True
     except Exception as e:
         print(f"MongoDB connectivity check FAILED: {e}")

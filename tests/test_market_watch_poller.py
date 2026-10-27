@@ -73,6 +73,21 @@ class MarketWatchPollerTests(unittest.TestCase):
         self.assertIsNone(result["generation"])
         self.assertEqual(state.published, [])
 
+    def test_fetch_error_returns_full_summary(self):
+        # main() logs every summary key; a missing one crashed the poller on each failed fetch.
+        ok_quote = {"symbol": "ABC", "price": 10, "open": 10, "high": 10, "low": 10, "volume": 100}
+        with patch.object(market_watch_poller, "fetch_market_watch",
+                          return_value=([ok_quote], datetime(2026, 8, 28, 10, 0, tzinfo=timezone.utc))):
+            ok = market_watch_poller.run_poll_cycle(FakeCollection(), object(), FakeState())
+
+        with patch.object(market_watch_poller, "fetch_market_watch",
+                          side_effect=ConnectionError("Remote end closed connection")):
+            result = market_watch_poller.run_poll_cycle(FakeCollection(), object(), FakeState())
+
+        self.assertTrue(result["fetch_error"])
+        self.assertIsNone(result["generation"])
+        self.assertEqual(set(result), set(ok))
+
 
 if __name__ == "__main__":
     unittest.main()

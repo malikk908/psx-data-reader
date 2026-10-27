@@ -59,7 +59,7 @@ def test_mongo_connectivity(connection_string, db_name):
         client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
         client.admin.command('ping')
         _ = client[db_name].name
-        print(f"MongoDB connectivity OK for {connection_string} (db: {db_name})")
+        print(f"MongoDB connectivity OK (db: {db_name})")
         return True
     except Exception as e:
         print(f"MongoDB connectivity check FAILED: {e}")

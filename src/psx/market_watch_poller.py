@@ -84,7 +84,7 @@ def test_mongo_connectivity(connection_string, db_name):
         client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
         client.admin.command("ping")
         _ = client[db_name].name
-        print(f"MongoDB connectivity OK for {connection_string} (db: {db_name})")
+        print(f"MongoDB connectivity OK (db: {db_name})")
         return True
     except Exception as e:
         print(f"MongoDB connectivity check FAILED: {e}")
@@ -436,6 +436,7 @@ def run_poll_cycle(collection, session, pipeline_state=None):
         return {
             "symbol_count": 0, "total_volume": None,
             "inserted": 0, "updated": 0,
+            "generation": None,
             "elapsed_s": time.monotonic() - cycle_start,
             "fetch_error": True,
         }
