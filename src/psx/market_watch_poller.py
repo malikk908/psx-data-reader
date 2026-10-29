@@ -31,6 +31,8 @@ Env vars:
                                   acting; prevents false positives from brief halts
                                   (default: 20)
     INTRADAY_HOLIDAY_RECHECK_MIN  minutes to sleep when stasis confirmed (default: 20)
+    INTRADAY_MONGO_STARTUP_WAIT_MIN  minutes to keep retrying an unreachable MongoDB at
+                                  startup before exiting non-zero (default: 10)
 
 Health reporting for finhisaab-be's feed watchdog (see psx/feed_health.py):
     HEALTH_PORT                   /health port on Railway's private network (default: PORT, else 8080)
@@ -55,7 +57,7 @@ from datetime import time as time_type
 import pymongo
 import requests
 from pymongo import MongoClient
-from pymongo.errors import BulkWriteError
+from pymongo.errors import BulkWriteError, PyMongoError
 
 try:
     from dotenv import load_dotenv  # type: ignore
@@ -63,7 +65,7 @@ try:
 except Exception:
     pass
 
-from psx.feed_health import FeedHealth
+from psx.feed_health import FeedHealth, redact
 from psx.market_watch_scraper import fetch_market_watch
 from psx.intraday_pipeline_state import IntradayPipelineState, STATE_COLLECTION
 
@@ -85,22 +87,61 @@ INTRADAY_COLLECTION = "intraday_klines_temp"
 # MongoDB helpers
 # ---------------------------------------------------------------------------
 
-def test_mongo_connectivity(connection_string, db_name):
+class MongoUnavailableAtStartup(RuntimeError):
+    """MongoDB stayed unreachable for the whole startup wait."""
+
+
+def mongo_connectivity_error(connection_string, db_name):
+    """Ping MongoDB. Returns None when reachable, else the error (credentials stripped)."""
+    client = None
     try:
         client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
         client.admin.command("ping")
         _ = client[db_name].name
-        print(f"MongoDB connectivity OK (db: {db_name})")
-        return True
+        logger.info("MongoDB connectivity OK (db: %s)", db_name)
+        return None
     except Exception as e:
-        print(f"MongoDB connectivity check FAILED: {e}")
-        return False
+        return redact(f"{type(e).__name__}: {e}")
     finally:
-        try:
-            if "client" in locals():
+        if client is not None:
+            try:
                 client.close()
-        except Exception:
-            pass
+            except Exception:
+                pass
+
+
+def wait_for_mongo(health, connection_string, db_name, give_up_after_s,
+                   max_backoff_s=60, sleep=time.sleep, monotonic=time.monotonic):
+    """
+    Retry an unreachable MongoDB at startup with backoff (5s, 10s, ... up to
+    max_backoff_s), reporting MONGO_UNAVAILABLE through /health meanwhile.
+
+    After give_up_after_s it raises, so FeedHealth.run pushes a "fatal" event and
+    the process exits non-zero for the platform to restart. Startup used to give
+    up at once and return, so the process exited with code 0 and an "on failure"
+    restart policy left it stopped.
+    """
+    deadline = monotonic() + give_up_after_s
+    delay = 5
+    attempt = 0
+    while True:
+        attempt += 1
+        health.attempt()
+        error = mongo_connectivity_error(connection_string, db_name)
+        if error is None:
+            return
+        health.failure("MONGO_UNAVAILABLE", f"MongoDB unreachable at startup: {error}")
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            raise MongoUnavailableAtStartup(
+                f"MongoDB unreachable at startup after {attempt} attempts "
+                f"over {give_up_after_s / 60:.0f} min: {error}"
+            )
+        wait = min(delay, max_backoff_s, remaining)
+        logger.error("MongoDB unreachable at startup (attempt %d): %s. Retrying in %.0fs.",
+                     attempt, error, wait)
+        sleep(wait)
+        delay = min(delay * 2, max_backoff_s)
 
 
 def ensure_indexes(collection):
@@ -458,16 +499,31 @@ def run_poll_cycle(collection, session, pipeline_state=None):
 
     total_volume = sum(q.get("volume") or 0 for q in quotes)
     minute       = _minute_floor(scraped_at)
-    previous_by_symbol = load_previous_snapshots(
-        collection,
-        [q["symbol"] for q in quotes if q.get("symbol")],
-        minute,
-    )
-    ops          = build_ops(quotes, scraped_at, previous_by_symbol)
     inserted = updated = 0
-
     generation = None
     error = None if quotes else {"code": "PSX_EMPTY_RESPONSE", "message": "market-watch returned no symbols"}
+
+    try:
+        previous_by_symbol = load_previous_snapshots(
+            collection,
+            [q["symbol"] for q in quotes if q.get("symbol")],
+            minute,
+        )
+    except PyMongoError as exc:
+        # A dropped or timed-out connection (AutoReconnect, NetworkTimeout) used to
+        # escape the loop and crash the process. Report it and let the next cycle
+        # retry: the client reconnects by itself once the server is back.
+        logger.error("MongoDB read failed: %s", exc)
+        return {
+            "symbol_count": len(quotes), "total_volume": total_volume,
+            "inserted": 0, "updated": 0,
+            "generation": None,
+            "elapsed_s": time.monotonic() - cycle_start,
+            "fetch_error": False,
+            "error": {"code": "MONGO_UNAVAILABLE", "message": f"{type(exc).__name__}: {exc}"[:300]},
+        }
+    ops          = build_ops(quotes, scraped_at, previous_by_symbol)
+
     if ops:
         try:
             result   = collection.bulk_write(ops, ordered=False)
@@ -478,6 +534,10 @@ def run_poll_cycle(collection, session, pipeline_state=None):
             updated  = bwe.details.get("nModified", 0)
             logger.error("BulkWriteError: %s", bwe.details.get("writeErrors", []))
             error = {"code": "MONGO_WRITE_FAILED", "message": str(bwe.details.get("writeErrors", []))[:300]}
+        except PyMongoError as exc:
+            # Same as above: keep polling instead of crashing on a connection error.
+            logger.error("MongoDB write failed: %s", exc)
+            error = {"code": "MONGO_UNAVAILABLE", "message": f"{type(exc).__name__}: {exc}"[:300]}
         else:
             if pipeline_state is not None:
                 try:
@@ -537,10 +597,8 @@ def poll_forever(health):
         cycle_min_secs, cycle_max_secs, stasis_thresh, stasis_min_minutes, holiday_recheck,
     )
 
-    if not test_mongo_connectivity(dst_uri, dst_db_name):
-        logger.error("MongoDB unreachable. Exiting.")
-        health.report("fatal", message="MongoDB unreachable at startup")
-        return
+    startup_wait_min = float(os.getenv("INTRADAY_MONGO_STARTUP_WAIT_MIN", "10"))
+    wait_for_mongo(health, dst_uri, dst_db_name, give_up_after_s=startup_wait_min * 60)
 
     dst_client = MongoClient(dst_uri)
     collection = dst_client[dst_db_name][INTRADAY_COLLECTION]
