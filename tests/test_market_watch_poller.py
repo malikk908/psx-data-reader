@@ -108,6 +108,28 @@ class MarketWatchPollerTests(unittest.TestCase):
             empty = market_watch_poller.run_poll_cycle(FakeCollection(), object(), FakeState())
         self.assertEqual(empty["error"]["code"], "PSX_EMPTY_RESPONSE")
 
+    def test_connection_errors_are_reported_not_raised(self):
+        from pymongo.errors import AutoReconnect
+
+        class DroppedReadCollection(FakeCollection):
+            def aggregate(self, pipeline):
+                raise AutoReconnect("mongo:27017: connection closed")
+
+        class DroppedWriteCollection(FakeCollection):
+            def bulk_write(self, operations, ordered=False):
+                raise AutoReconnect("mongo:27017: connection closed")
+
+        quote = {"symbol": "ABC", "price": 10, "open": 10, "high": 10, "low": 10, "volume": 100}
+        scraped_at = datetime(2026, 8, 28, 10, 0, tzinfo=timezone.utc)
+        for collection in (DroppedReadCollection(), DroppedWriteCollection()):
+            state = FakeState()
+            with patch.object(market_watch_poller, "fetch_market_watch", return_value=([quote], scraped_at)):
+                result = market_watch_poller.run_poll_cycle(collection, object(), state)
+            self.assertEqual(result["error"]["code"], "MONGO_UNAVAILABLE")
+            self.assertIn("AutoReconnect", result["error"]["message"])
+            self.assertFalse(result["fetch_error"])
+            self.assertEqual(state.published, [])
+
 
 if __name__ == "__main__":
     unittest.main()
