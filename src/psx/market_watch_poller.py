@@ -55,7 +55,7 @@ from datetime import time as time_type
 import pymongo
 import requests
 from pymongo import MongoClient
-from pymongo.errors import BulkWriteError
+from pymongo.errors import BulkWriteError, PyMongoError
 
 try:
     from dotenv import load_dotenv  # type: ignore
@@ -458,16 +458,31 @@ def run_poll_cycle(collection, session, pipeline_state=None):
 
     total_volume = sum(q.get("volume") or 0 for q in quotes)
     minute       = _minute_floor(scraped_at)
-    previous_by_symbol = load_previous_snapshots(
-        collection,
-        [q["symbol"] for q in quotes if q.get("symbol")],
-        minute,
-    )
-    ops          = build_ops(quotes, scraped_at, previous_by_symbol)
     inserted = updated = 0
-
     generation = None
     error = None if quotes else {"code": "PSX_EMPTY_RESPONSE", "message": "market-watch returned no symbols"}
+
+    try:
+        previous_by_symbol = load_previous_snapshots(
+            collection,
+            [q["symbol"] for q in quotes if q.get("symbol")],
+            minute,
+        )
+    except PyMongoError as exc:
+        # A dropped or timed-out connection (AutoReconnect, NetworkTimeout) used to
+        # escape the loop and crash the process. Report it and let the next cycle
+        # retry: the client reconnects by itself once the server is back.
+        logger.error("MongoDB read failed: %s", exc)
+        return {
+            "symbol_count": len(quotes), "total_volume": total_volume,
+            "inserted": 0, "updated": 0,
+            "generation": None,
+            "elapsed_s": time.monotonic() - cycle_start,
+            "fetch_error": False,
+            "error": {"code": "MONGO_UNAVAILABLE", "message": f"{type(exc).__name__}: {exc}"[:300]},
+        }
+    ops          = build_ops(quotes, scraped_at, previous_by_symbol)
+
     if ops:
         try:
             result   = collection.bulk_write(ops, ordered=False)
@@ -478,6 +493,10 @@ def run_poll_cycle(collection, session, pipeline_state=None):
             updated  = bwe.details.get("nModified", 0)
             logger.error("BulkWriteError: %s", bwe.details.get("writeErrors", []))
             error = {"code": "MONGO_WRITE_FAILED", "message": str(bwe.details.get("writeErrors", []))[:300]}
+        except PyMongoError as exc:
+            # Same as above: keep polling instead of crashing on a connection error.
+            logger.error("MongoDB write failed: %s", exc)
+            error = {"code": "MONGO_UNAVAILABLE", "message": f"{type(exc).__name__}: {exc}"[:300]}
         else:
             if pipeline_state is not None:
                 try:
