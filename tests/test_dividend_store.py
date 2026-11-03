@@ -94,10 +94,10 @@ class ArchiveAndCorrectionTests(unittest.TestCase):
     def test_nearby_psx_announcement_is_archived_in_favour_of_scstrade(self):
         psx_id = self.psx("SOYASUP", datetime(2026, 10, 19), 0.5)
 
-        archived, blocked = dividend_store.archive_superseded_announcements(
+        archived, blocked, redated = dividend_store.archive_superseded_announcements(
             self.db, [self.incoming("SOYASUP", datetime(2026, 10, 16), 0.5)], DIVIDENDS, ARCHIVE, NOW)
 
-        self.assertEqual((archived, blocked), (1, set()))
+        self.assertEqual((archived, blocked, redated), (1, set(), 0))
         self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": psx_id}), 0)
         stored = self.db[ARCHIVE].find_one({"_id": psx_id})
         self.assertEqual(stored["amountPerShare"], 0.5)
@@ -109,12 +109,12 @@ class ArchiveAndCorrectionTests(unittest.TestCase):
         self.db["dividendentitlements"].insert_one({"announcementId": psx_id, "isActive": True})
         no_ents = self.psx("EFERT", datetime(2026, 10, 30), 5.5)
 
-        archived, blocked = dividend_store.archive_superseded_announcements(
+        archived, blocked, redated = dividend_store.archive_superseded_announcements(
             self.db,
             [self.incoming("UBL", datetime(2026, 10, 22), 8), self.incoming("EFERT", datetime(2026, 10, 30), 5.5)],
             DIVIDENDS, ARCHIVE, NOW)
 
-        self.assertEqual((archived, blocked), (0, set()))
+        self.assertEqual((archived, blocked, redated), (0, set(), 0))
         self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": {"$in": [psx_id, no_ents]}}), 2)
 
     def test_announcements_from_other_sources_or_far_away_are_kept(self):
@@ -124,7 +124,7 @@ class ArchiveAndCorrectionTests(unittest.TestCase):
         far = self.psx("SOYASUP", datetime(2026, 12, 1), 0.5)
         other_symbol = self.psx("OTHER", datetime(2026, 10, 16), 1)
 
-        archived, _ = dividend_store.archive_superseded_announcements(
+        archived, _, _ = dividend_store.archive_superseded_announcements(
             self.db, [self.incoming("SOYASUP", datetime(2026, 10, 16), 0.5)], DIVIDENDS, ARCHIVE, NOW)
 
         self.assertEqual(archived, 0)
@@ -136,12 +136,75 @@ class ArchiveAndCorrectionTests(unittest.TestCase):
         psx_id = self.psx("SOYASUP", datetime(2026, 10, 19), 0.5)
         self.db["dividendentitlements"].insert_one({"announcementId": psx_id, "isActive": True})
 
-        archived, blocked = dividend_store.archive_superseded_announcements(
+        archived, blocked, redated = dividend_store.archive_superseded_announcements(
             self.db, [self.incoming("SOYASUP", datetime(2026, 10, 16), 0.5)], DIVIDENDS, ARCHIVE, NOW)
 
         self.assertEqual(archived, 0)
         self.assertEqual(blocked, {("SOYASUP", datetime(2026, 10, 16))})
         self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": psx_id}), 1)
+
+    # FFC: the filing's ex-date was Sunday 2026-11-08, scstrade has Friday 2026-11-06,
+    # and holders already had PENDING entitlements. NOW is 2026-10-20, so both are ahead.
+    def ffc(self, status="PENDING", amount=18.5):
+        psx_id = self.psx("FFC", datetime(2026, 11, 8), amount)
+        self.db["dividendentitlements"].insert_many([
+            {"announcementId": psx_id, "announcementExDate": datetime(2026, 11, 8), "isActive": True, "status": "PENDING"},
+            {"announcementId": psx_id, "announcementExDate": datetime(2026, 11, 8), "isActive": True, "status": status},
+        ])
+        return psx_id
+
+    def run_ffc(self):
+        return dividend_store.archive_superseded_announcements(
+            self.db, [self.incoming("FFC", datetime(2026, 11, 6), 18.5)], DIVIDENDS, ARCHIVE, NOW)
+
+    def test_unsettled_announcement_with_entitlements_is_moved_to_scstrades_ex_date(self):
+        psx_id = self.ffc()
+
+        archived, blocked, redated = self.run_ffc()
+
+        self.assertEqual((archived, blocked, redated), (0, set(), 1))
+        moved = self.db[DIVIDENDS].find_one({"_id": psx_id})
+        self.assertEqual(moved["exDate"], datetime(2026, 11, 6))
+        self.assertEqual(moved["metadata"]["source"], "PSX #28404 - Financial results")
+        self.assertEqual(
+            [e["announcementExDate"] for e in self.db["dividendentitlements"].find({"announcementId": psx_id})],
+            [datetime(2026, 11, 6)] * 2)
+        self.assertEqual(self.db[ARCHIVE].count_documents({}), 0)
+
+    def test_announcement_is_not_moved_when_an_entitlement_is_settled(self):
+        psx_id = self.ffc(status="SETTLED")
+
+        archived, blocked, redated = self.run_ffc()
+
+        self.assertEqual((archived, blocked, redated), (0, {("FFC", datetime(2026, 11, 6))}, 0))
+        self.assertEqual(self.db[DIVIDENDS].find_one({"_id": psx_id})["exDate"], datetime(2026, 11, 8))
+
+    def test_announcement_is_not_moved_when_the_amounts_differ(self):
+        psx_id = self.ffc(amount=12)
+
+        archived, blocked, redated = self.run_ffc()
+
+        self.assertEqual((archived, blocked, redated), (0, {("FFC", datetime(2026, 11, 6))}, 0))
+        self.assertEqual(self.db[DIVIDENDS].find_one({"_id": psx_id})["exDate"], datetime(2026, 11, 8))
+
+    def test_announcement_is_not_moved_when_an_ex_date_has_passed(self):
+        psx_id = self.psx("FFC", datetime(2026, 10, 19), 18.5)
+        self.db["dividendentitlements"].insert_one({"announcementId": psx_id, "isActive": True, "status": "PENDING"})
+
+        archived, blocked, redated = dividend_store.archive_superseded_announcements(
+            self.db, [self.incoming("FFC", datetime(2026, 10, 16), 18.5)], DIVIDENDS, ARCHIVE, NOW)
+
+        self.assertEqual((archived, blocked, redated), (0, {("FFC", datetime(2026, 10, 16))}, 0))
+
+    def test_announcement_is_not_moved_onto_another_announcements_ex_date(self):
+        psx_id = self.ffc()
+        self.db[DIVIDENDS].insert_one({"symbol": "FFC", "amountPerShare": 1, "exDate": datetime(2026, 11, 6),
+                                       "metadata": {"source": "manual"}})
+
+        _, blocked, redated = self.run_ffc()
+
+        self.assertEqual((blocked, redated), ({("FFC", datetime(2026, 11, 6))}, 0))
+        self.assertEqual(self.db[DIVIDENDS].find_one({"_id": psx_id})["exDate"], datetime(2026, 11, 8))
 
     def test_existing_announcement_is_corrected_when_it_has_no_entitlements(self):
         doc_id = self.db[DIVIDENDS].insert_one({
@@ -243,6 +306,23 @@ class SaveAnnouncementsTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(self.db[DIVIDENDS].count_documents({}), 1)
         self.assertEqual(self.db[DIVIDENDS].count_documents({"metadata.source": "scstrade"}), 0)
+
+    def test_psx_dividend_with_pending_entitlements_is_moved_and_not_duplicated(self):
+        self.db["stocks"].insert_one({"symbol": "FFC"})
+        psx_id = self.db[DIVIDENDS].insert_one({
+            "symbol": "FFC", "amountPerShare": 18.5, "exDate": datetime(2999, 11, 8), "status": "ANNOUNCED",
+            "metadata": {"source": "PSX #287242"},
+        }).inserted_id
+        self.db["dividendentitlements"].insert_one(
+            {"announcementId": psx_id, "announcementExDate": datetime(2999, 11, 8), "isActive": True, "status": "PENDING"})
+
+        ok, message = self.save([scraped("FFC", 185.0, datetime(2999, 11, 6))])
+
+        self.assertTrue(ok, message)
+        self.assertIn("1 PSX re-dated", message)
+        remaining = list(self.db[DIVIDENDS].find({}))
+        self.assertEqual([(d["_id"], d["exDate"]) for d in remaining], [(psx_id, datetime(2999, 11, 6))])
+        self.assertEqual(self.db["dividendentitlements"].find_one({})["announcementExDate"], datetime(2999, 11, 6))
 
     def test_dividend_for_unknown_stock_is_not_saved(self):
         ok, _ = self.save([scraped("NEWCO", 25.0, datetime(2999, 10, 16))])

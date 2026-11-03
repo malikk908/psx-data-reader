@@ -7,6 +7,11 @@ announcements from PSX filings ("PSX #..." source), and the two usually
 disagree by a day or a weekend, so the same dividend would be credited twice.
 When scstrade has a dividend, any PSX-sourced announcement for the same symbol
 within ARCHIVE_WINDOW_DAYS is moved to the archive collection.
+
+A PSX announcement that holders already have entitlements on cannot be archived.
+When the entitlements are all unsettled and both ex-dates are still ahead, it is
+moved to scstrade's ex-date in place instead (id and entitlements kept), because
+nothing can have been traded or credited between the two dates.
 """
 
 import pymongo
@@ -200,6 +205,42 @@ def _has_entitlements(db, announcement_id):
     ) > 0
 
 
+def _redate_in_place(db, candidate, dividend, dividend_collection_name, now):
+    """
+    Move a PSX announcement that has entitlements to scstrade's ex-date, and the
+    ex-date copied onto its entitlements with it. Returns True when moved.
+
+    Only while it is safe without recomputing anything: the amounts agree, both
+    ex-dates are after today (so no trade can fall between them and nothing is
+    settled), every entitlement is still PENDING, and no other announcement
+    sits on the new ex-date. Anything else stays blocked for a backend repair.
+    """
+    tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    div_coll = db[dividend_collection_name]
+    new_ex_date = dividend["exDate"]
+
+    if abs(candidate.get("amountPerShare", 0) - dividend["amountPerShare"]) > 1e-9:
+        return False
+    if candidate["exDate"] < tomorrow or new_ex_date < tomorrow:
+        return False
+    if db[ENTITLEMENT_COLLECTION].count_documents(
+            {"announcementId": candidate["_id"], "isActive": {"$ne": False}, "status": {"$ne": "PENDING"}}, limit=1):
+        return False
+    if div_coll.count_documents({"symbol": dividend["symbol"], "exDate": new_ex_date}, limit=1):
+        return False
+
+    div_coll.update_one({"_id": candidate["_id"]}, {"$set": {"exDate": new_ex_date, "updatedAt": now}})
+    db[ENTITLEMENT_COLLECTION].update_many(
+        {"announcementId": candidate["_id"]},
+        {"$set": {"announcementExDate": new_ex_date, "updatedAt": now}})
+    logger.info(
+        f"{dividend['symbol']}: moved PSX announcement {candidate['_id']} "
+        f"from ex {candidate['exDate']:%Y-%m-%d} to scstrade's ex {new_ex_date:%Y-%m-%d} "
+        f"(its entitlements are unsettled)"
+    )
+    return True
+
+
 def archive_superseded_announcements(db, dividends, dividend_collection_name,
                                      archive_collection_name=DEFAULT_ARCHIVE_COLLECTION,
                                      now=None):
@@ -207,17 +248,18 @@ def archive_superseded_announcements(db, dividends, dividend_collection_name,
     Move PSX-sourced announcements that duplicate a scstrade dividend into the
     archive collection, so each dividend exists once, with scstrade's ex-date.
 
-    An announcement that already has entitlements is left alone, because
-    removing it would orphan them. Such a case needs a repair on the backend,
-    and the scstrade dividend is not inserted meanwhile so the two never
-    both produce entitlements.
+    An announcement that already has entitlements cannot be removed without
+    orphaning them. If they are all unsettled and the dates are still ahead, it
+    is moved to scstrade's ex-date instead (_redate_in_place). Otherwise it is
+    left alone and needs a repair on the backend, and the scstrade dividend is
+    not inserted meanwhile so the two never both produce entitlements.
 
-    Returns (archived_count, blocked_keys), where blocked_keys holds the
-    (symbol, exDate) of scstrade dividends that must not be inserted yet.
+    Returns (archived_count, blocked_keys, redated_count), where blocked_keys
+    holds the (symbol, exDate) of scstrade dividends that must not be inserted yet.
     """
     now = now or datetime.now()
     if not dividends:
-        return 0, set()
+        return 0, set(), 0
 
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     window = timedelta(days=ARCHIVE_WINDOW_DAYS)
@@ -232,6 +274,7 @@ def archive_superseded_announcements(db, dividends, dividend_collection_name,
         candidates_by_symbol.setdefault(doc.get("symbol"), []).append(doc)
 
     archived = 0
+    redated = 0
     blocked_keys = set()
     handled = set()
 
@@ -250,6 +293,10 @@ def archive_superseded_announcements(db, dividends, dividend_collection_name,
                 continue
 
             if _has_entitlements(db, candidate["_id"]):
+                if _redate_in_place(db, candidate, dividend, dividend_collection_name, now):
+                    redated += 1
+                    handled.add(candidate["_id"])
+                    continue
                 logger.warning(
                     f"{dividend['symbol']}: PSX announcement {candidate['_id']} "
                     f"(ex {candidate['exDate']:%Y-%m-%d}) duplicates scstrade "
@@ -280,7 +327,7 @@ def archive_superseded_announcements(db, dividends, dividend_collection_name,
                 f"in favour of scstrade (ex {dividend['exDate']:%Y-%m-%d}, Rs {dividend['amountPerShare']})"
             )
 
-    return archived, blocked_keys
+    return archived, blocked_keys, redated
 
 
 def correct_existing_dividends(db, dividends, dividend_collection_name, now=None):
@@ -376,6 +423,7 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
         div_inserted = 0
         bonus_inserted = 0
         div_archived = 0
+        div_redated = 0
         div_corrected = 0
         blocked_keys = set()
 
@@ -445,7 +493,7 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
 
         # scstrade is authoritative: archive PSX duplicates, fix amounts after a
         # face value correction, then insert what is new.
-        div_archived, blocked_keys = archive_superseded_announcements(
+        div_archived, blocked_keys, div_redated = archive_superseded_announcements(
             db, dividends, dividend_collection_name, archive_collection_name
         )
         div_corrected = correct_existing_dividends(db, dividends, dividend_collection_name)
@@ -480,7 +528,8 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
 
         msg = (f"Processed successfully. "
                f"Dividends: {div_inserted} inserted, {div_corrected} corrected, "
-               f"{div_archived} PSX duplicates archived, {div_deleted} deleted; "
+               f"{div_archived} PSX duplicates archived, {div_redated} PSX re-dated, "
+               f"{div_deleted} deleted; "
                f"Bonuses: {bonus_inserted} inserted, {bonus_deleted} deleted (duplicates skipped).")
         logger.info(msg)
         return True, msg
