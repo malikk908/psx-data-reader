@@ -15,6 +15,7 @@ NOW = datetime(2026, 10, 20, 12, 0, 0)
 DIVIDENDS = "dividendannouncements"
 BONUSES = "bonusannouncements"
 ARCHIVE = "dividendannouncements_archive"
+BONUS_ARCHIVE = "bonusannouncements_archive"
 
 
 def scraped(symbol, percent, x_date, sector="FOOD"):
@@ -27,6 +28,20 @@ def scraped(symbol, percent, x_date, sector="FOOD"):
         "x_date": x_date,
         "sector": sector,
         "announcement_type": ["dividend"],
+    }
+
+
+def scraped_bonus(symbol, bonus, x_date, dividend=None, sector="INSURANCE"):
+    types = ["bonus"] + (["dividend"] if dividend else [])
+    return {
+        "symbol": symbol,
+        "name": symbol,
+        "dividend": dividend or 0.0,
+        "bonus": f"{bonus}%",
+        "right": "",
+        "x_date": x_date,
+        "sector": sector,
+        "announcement_type": types,
     }
 
 
@@ -394,6 +409,120 @@ class SaveAnnouncementsTests(unittest.TestCase):
 
         self.assertTrue(ok)
         self.assertEqual(self.db[DIVIDENDS].count_documents({"_id": doc_id}), 0)
+
+
+@unittest.skipIf(mongomock is None, "mongomock is not installed")
+class BonusRevisionTests(unittest.TestCase):
+    """scstrade lists a moved bonus under both dates (LSEVL 5%: 20 Oct and 05 Nov 2026)."""
+
+    def setUp(self):
+        self.db = mongomock.MongoClient().db
+        self.db["stocks"].insert_many([{"symbol": "LSEVL", "faceValue": 10}, {"symbol": "UNIC"}])
+        # As in production: a bonus already stored is skipped by the insert.
+        self.db[BONUSES].create_index([("symbol", 1), ("exDate", 1)], unique=True, name="symbol_exDate_unique_idx")
+        patcher = patch.object(dividend_store, "connect_to_mongodb", return_value=self.db)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def save(self, rows):
+        return dividend_store.save_announcements_to_mongodb(
+            pd.DataFrame(rows), "uri", "db", DIVIDENDS, BONUSES, ARCHIVE)
+
+    def stored_bonus(self, symbol, percent, ex_date):
+        return self.db[BONUSES].insert_one({
+            "symbol": symbol, "bonusPercentage": percent, "bonusType": "BONUS_SHARES", "exDate": ex_date,
+            "status": "ANNOUNCED", "metadata": {"source": "scstrade"},
+        }).inserted_id
+
+    def bonus_dates(self, symbol):
+        return sorted(d["exDate"] for d in self.db[BONUSES].find({"symbol": symbol}))
+
+    def test_moved_bonus_without_entitlements_keeps_only_the_new_date(self):
+        old_id = self.stored_bonus("UNIC", 20.0, datetime(2026, 4, 17))
+
+        ok, message = self.save([
+            scraped_bonus("UNIC", 20, datetime(2026, 4, 17)),
+            scraped_bonus("UNIC", 20, datetime(2026, 3, 24)),
+        ])
+
+        self.assertTrue(ok, message)
+        self.assertEqual(self.bonus_dates("UNIC"), [datetime(2026, 3, 24)])
+        archived = self.db[BONUS_ARCHIVE].find_one({"_id": old_id})
+        self.assertEqual(archived["archiveReason"], "redated_by_scstrade")
+        self.assertEqual(archived["supersededBy"]["exDate"], datetime(2026, 3, 24))
+        self.assertIn("1 re-dated", message)
+
+    def test_old_date_still_in_the_feed_is_not_inserted_again_on_later_runs(self):
+        self.stored_bonus("UNIC", 20.0, datetime(2026, 4, 17))
+        feed = [scraped_bonus("UNIC", 20, datetime(2026, 4, 17)), scraped_bonus("UNIC", 20, datetime(2026, 3, 24))]
+        self.save(feed)
+
+        ok, message = self.save(feed)
+
+        self.assertTrue(ok, message)
+        self.assertEqual(self.bonus_dates("UNIC"), [datetime(2026, 3, 24)])
+
+    def test_moved_bonus_with_entitlements_is_left_alone_and_the_new_date_not_inserted(self):
+        # The LSEVL case: the old date passed and holders were credited.
+        old_id = self.stored_bonus("LSEVL", 5.0, datetime(2026, 10, 20))
+        self.db["bonusentitlements"].insert_one({"announcementId": old_id, "isActive": True, "status": "SETTLED"})
+
+        ok, message = self.save([
+            scraped_bonus("LSEVL", 5, datetime(2026, 11, 5)),
+            scraped_bonus("LSEVL", 5, datetime(2026, 10, 20), dividend=10.0),
+        ])
+
+        self.assertTrue(ok, message)
+        self.assertEqual(self.bonus_dates("LSEVL"), [datetime(2026, 10, 20)])
+        self.assertIn("1 blocked", message)
+        self.assertEqual(self.db[BONUS_ARCHIVE].count_documents({}), 0)
+
+    def test_date_archived_by_a_backend_repair_is_never_inserted_again(self):
+        self.stored_bonus("LSEVL", 5.0, datetime(2026, 11, 5))
+        self.db[BONUS_ARCHIVE].insert_one({
+            "symbol": "LSEVL", "bonusPercentage": 5.0, "bonusType": "BONUS_SHARES", "exDate": datetime(2026, 10, 20),
+            "archiveReason": "redated_by_scstrade", "metadata": {"source": "scstrade"},
+        })
+
+        ok, message = self.save([
+            scraped_bonus("LSEVL", 5, datetime(2026, 11, 5)),
+            scraped_bonus("LSEVL", 5, datetime(2026, 10, 20), dividend=10.0),
+        ])
+
+        self.assertTrue(ok, message)
+        self.assertEqual(self.bonus_dates("LSEVL"), [datetime(2026, 11, 5)])
+
+    def test_two_new_dates_for_one_bonus_are_both_held_back(self):
+        ok, message = self.save([
+            scraped_bonus("UNIC", 20, datetime(2026, 4, 17)),
+            scraped_bonus("UNIC", 20, datetime(2026, 3, 24)),
+        ])
+
+        self.assertTrue(ok, message)
+        self.assertEqual(self.bonus_dates("UNIC"), [])
+        self.assertIn("2 blocked", message)
+
+    def test_a_different_percentage_or_a_year_apart_is_a_separate_bonus(self):
+        self.stored_bonus("UNIC", 20.0, datetime(2025, 4, 16))
+        self.stored_bonus("LSEVL", 5.0, datetime(2026, 10, 20))
+
+        ok, message = self.save([
+            scraped_bonus("UNIC", 20, datetime(2026, 3, 24)),
+            scraped_bonus("LSEVL", 10, datetime(2026, 11, 5)),
+        ])
+
+        self.assertTrue(ok, message)
+        self.assertEqual(self.bonus_dates("UNIC"), [datetime(2025, 4, 16), datetime(2026, 3, 24)])
+        self.assertEqual(self.bonus_dates("LSEVL"), [datetime(2026, 10, 20), datetime(2026, 11, 5)])
+
+    def test_unlisted_future_bonus_with_entitlements_is_kept(self):
+        doc_id = self.stored_bonus("UNIC", 20.0, datetime(2999, 4, 17))
+        self.db["bonusentitlements"].insert_one({"announcementId": doc_id, "isActive": True, "status": "PENDING"})
+
+        ok, _ = self.save([scraped_bonus("LSEVL", 5, datetime(2999, 11, 5))])
+
+        self.assertTrue(ok)
+        self.assertEqual(self.db[BONUSES].count_documents({"_id": doc_id}), 1)
 
 
 if __name__ == "__main__":
