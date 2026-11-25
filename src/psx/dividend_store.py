@@ -12,6 +12,10 @@ A PSX announcement that holders already have entitlements on cannot be archived.
 When the entitlements are all unsettled and both ex-dates are still ahead, it is
 moved to scstrade's ex-date in place instead (id and entitlements kept), because
 nothing can have been traded or credited between the two dates.
+
+scstrade keeps the old row when a bonus's book closure moves, so its feed can
+list one bonus under two ex-dates. reconcile_bonus_revisions keeps one of them:
+see its docstring.
 """
 
 import pymongo
@@ -29,11 +33,20 @@ SCSTRADE_SOURCE = "scstrade"
 DEFAULT_FACE_VALUE = 10.0  # Stock.faceValue is not stored when it is 10
 ENTITLEMENT_COLLECTION = "dividendentitlements"
 DEFAULT_ARCHIVE_COLLECTION = "dividendannouncements_archive"
+BONUS_ENTITLEMENT_COLLECTION = "bonusentitlements"
+DEFAULT_BONUS_ARCHIVE_COLLECTION = "bonusannouncements_archive"
+# An archived bonus with this reason is a date scstrade moved away from. Its
+# row stays in the feed, so the archive is what stops it being inserted again.
+BONUS_REDATED_REASON = "redated_by_scstrade"
 
 # A PSX announcement this close to a scstrade one is the same dividend.
 ARCHIVE_WINDOW_DAYS = 7
 # Only announcements this recent are considered for archiving or correction.
 RECENT_LOOKBACK_DAYS = 60
+# The same bonus (symbol, type and percentage) listed again this close to a
+# stored one is its book closure moving, not a second bonus. Real repeats are a
+# year or at least an interim period apart.
+BONUS_REVISION_WINDOW_DAYS = 30
 
 
 def connect_to_mongodb(connection_string, db_name):
@@ -203,6 +216,126 @@ def _has_entitlements(db, announcement_id):
     return db[ENTITLEMENT_COLLECTION].count_documents(
         {"announcementId": announcement_id, "isActive": {"$ne": False}}, limit=1
     ) > 0
+
+
+def _has_bonus_entitlements(db, announcement_id):
+    return db[BONUS_ENTITLEMENT_COLLECTION].count_documents(
+        {"announcementId": announcement_id, "isActive": {"$ne": False}}, limit=1
+    ) > 0
+
+
+def _same_bonus(a, b, window):
+    return (a.get("symbol") == b["symbol"]
+            and a.get("bonusType") == b["bonusType"]
+            and abs((a.get("bonusPercentage") or 0) - b["bonusPercentage"]) < 1e-9
+            and a.get("exDate") != b["exDate"]
+            and abs(a["exDate"] - b["exDate"]) <= window)
+
+
+def reconcile_bonus_revisions(db, bonuses, bonus_collection_name,
+                              archive_collection_name=DEFAULT_BONUS_ARCHIVE_COLLECTION,
+                              now=None):
+    """
+    Keep one row per bonus when scstrade moves its ex-date.
+
+    scstrade does not edit the old row when a book closure moves: it lists the
+    bonus again under the new date and keeps the old row (LSEVL 5%, 20 Oct and
+    05 Nov 2026). Both would be inserted, and the backend would apply the bonus
+    twice. A bonus not seen before that matches a stored scstrade bonus (same
+    symbol, type and percentage, within BONUS_REVISION_WINDOW_DAYS) is that
+    bonus's new date:
+
+    - the stored row has no entitlements: it is archived with reason
+      BONUS_REDATED_REASON, and the new date is inserted;
+    - it has entitlements (holders may already be credited): nothing changes,
+      the new date is not inserted, and a repair on the backend is needed.
+
+    A feed row whose date was archived this way is never inserted again. Two
+    new rows for the same bonus with nothing stored cannot be told apart, so
+    neither is inserted and a warning asks for a manual pick.
+
+    Returns (skip_keys, archived_count, blocked_count): skip_keys holds the
+    (symbol, exDate) of feed bonuses that must not be inserted.
+    """
+    now = now or datetime.now()
+    if not bonuses:
+        return set(), 0, 0
+
+    window = timedelta(days=BONUS_REVISION_WINDOW_DAYS)
+    bonus_coll = db[bonus_collection_name]
+    # Few rows: scstrade bonuses only. No date limit, because the feed keeps old
+    # rows for months.
+    stored = list(bonus_coll.find({"metadata.source": SCSTRADE_SOURCE}))
+    stored_keys = {(doc.get("symbol"), doc.get("exDate")) for doc in stored}
+    superseded = {
+        (doc.get("symbol"), doc.get("exDate"))
+        for doc in db[archive_collection_name].find({"archiveReason": BONUS_REDATED_REASON})
+    }
+
+    skip_keys = set()
+    archived = 0
+    blocked = 0
+    handled = set()
+    new_bonuses = []
+
+    for bonus in bonuses:
+        key = (bonus["symbol"], bonus["exDate"])
+        if key in superseded:
+            skip_keys.add(key)
+            continue
+        if key in stored_keys:
+            continue
+
+        matches = [doc for doc in stored if doc["_id"] not in handled and _same_bonus(doc, bonus, window)]
+        if not matches:
+            new_bonuses.append(bonus)
+            continue
+
+        old = min(matches, key=lambda doc: abs(doc["exDate"] - bonus["exDate"]))
+        handled.add(old["_id"])
+        old_key = (old["symbol"], old["exDate"])
+
+        if _has_bonus_entitlements(db, old["_id"]):
+            logger.warning(
+                f"{bonus['symbol']}: scstrade moved the {bonus['bonusPercentage']}% bonus from "
+                f"ex {old['exDate']:%Y-%m-%d} to ex {bonus['exDate']:%Y-%m-%d}, but {old['_id']} has "
+                f"entitlements. Not moved and the new date not inserted; repair on the backend."
+            )
+            skip_keys.add(key)
+            blocked += 1
+            continue
+
+        db[archive_collection_name].replace_one({"_id": old["_id"]}, {
+            **old,
+            "archivedAt": now,
+            "archiveReason": BONUS_REDATED_REASON,
+            "supersededBy": {
+                "symbol": bonus["symbol"],
+                "exDate": bonus["exDate"],
+                "bonusPercentage": bonus["bonusPercentage"],
+            },
+        }, upsert=True)
+        bonus_coll.delete_one({"_id": old["_id"]})
+        # The old date is still in this feed: don't insert it straight back.
+        skip_keys.add(old_key)
+        archived += 1
+        logger.info(
+            f"{bonus['symbol']}: archived scstrade bonus {old['_id']} (ex {old['exDate']:%Y-%m-%d}); "
+            f"scstrade moved the {bonus['bonusPercentage']}% bonus to ex {bonus['exDate']:%Y-%m-%d}"
+        )
+
+    for bonus in new_bonuses:
+        twins = [other for other in new_bonuses if _same_bonus(other, bonus, window)]
+        if twins:
+            logger.warning(
+                f"{bonus['symbol']}: scstrade lists the {bonus['bonusPercentage']}% bonus under "
+                f"{len(twins) + 1} ex-dates and none is stored. None inserted; add the right one "
+                f"by hand and archive the others with reason {BONUS_REDATED_REASON}."
+            )
+            skip_keys.add((bonus["symbol"], bonus["exDate"]))
+            blocked += 1
+
+    return skip_keys, archived, blocked
 
 
 def _redate_in_place(db, candidate, dividend, dividend_collection_name, now):
@@ -400,7 +533,8 @@ def correct_existing_dividends(db, dividends, dividend_collection_name, now=None
 def save_announcements_to_mongodb(df, connection_string, db_name,
                                   dividend_collection_name,
                                   bonus_collection_name,
-                                  archive_collection_name=DEFAULT_ARCHIVE_COLLECTION):
+                                  archive_collection_name=DEFAULT_ARCHIVE_COLLECTION,
+                                  bonus_archive_collection_name=DEFAULT_BONUS_ARCHIVE_COLLECTION):
     try:
         db = connect_to_mongodb(connection_string, db_name)
 
@@ -480,8 +614,15 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
             bonus_delete_ops = []
             for doc in future_bonuses:
                 key = (doc.get('symbol'), doc.get('exDate'))
-                if key not in incoming_bonus_keys:
-                    bonus_delete_ops.append(pymongo.DeleteOne({'_id': doc['_id']}))
+                if key in incoming_bonus_keys:
+                    continue
+                if _has_bonus_entitlements(db, doc['_id']):
+                    logger.warning(
+                        f"{doc.get('symbol')}: scstrade bonus {doc['_id']} is no longer listed "
+                        f"but has entitlements, so it is kept."
+                    )
+                    continue
+                bonus_delete_ops.append(pymongo.DeleteOne({'_id': doc['_id']}))
 
             if bonus_delete_ops:
                 try:
@@ -498,6 +639,11 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
         )
         div_corrected = correct_existing_dividends(db, dividends, dividend_collection_name)
         dividends = [d for d in dividends if (d['symbol'], d['exDate']) not in blocked_keys]
+
+        bonus_skip_keys, bonus_archived, bonus_blocked = reconcile_bonus_revisions(
+            db, bonuses, bonus_collection_name, bonus_archive_collection_name
+        )
+        bonuses = [b for b in bonuses if (b['symbol'], b['exDate']) not in bonus_skip_keys]
 
         # Bulk write dividends
         if dividends:
@@ -530,7 +676,8 @@ def save_announcements_to_mongodb(df, connection_string, db_name,
                f"Dividends: {div_inserted} inserted, {div_corrected} corrected, "
                f"{div_archived} PSX duplicates archived, {div_redated} PSX re-dated, "
                f"{div_deleted} deleted; "
-               f"Bonuses: {bonus_inserted} inserted, {bonus_deleted} deleted (duplicates skipped).")
+               f"Bonuses: {bonus_inserted} inserted, {bonus_archived} re-dated (old date archived), "
+               f"{bonus_blocked} blocked, {bonus_deleted} deleted (duplicates skipped).")
         logger.info(msg)
         return True, msg
 
